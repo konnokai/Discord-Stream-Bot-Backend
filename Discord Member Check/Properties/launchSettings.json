@@ -1,0 +1,21 @@
+{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost",
+      "sslPort": 443
+    }
+  },
+  "profiles": {
+    "Discord_Member_Check": {
+      "commandName": "Project",
+      "workingDirectory": ".\\bin\\Debug\\net5.0",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging"
+      },
+      "applicationUrl": "",
+      "dotnetRunMessages": "true"
+    }
+  }
+}
