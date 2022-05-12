@@ -40,6 +40,11 @@ namespace Discord_Member_Check
             await _database.StringSetAsync(GenerateStoredKey(key, typeof(T)), JsonConvert.SerializeObject(value));
         }
 
+        public async Task<bool> IsExistUserTokenAsync<T>(string key)
+        {
+            return await _database.KeyExistsAsync(GenerateStoredKey(key, typeof(T)));
+        }
+
         public static string GenerateStoredKey(string key, Type t)
         {
             return string.Format("{0}:{1}", t.FullName, key);
