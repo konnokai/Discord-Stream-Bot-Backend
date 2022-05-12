@@ -14,9 +14,9 @@ namespace Discord_Member_Check.Auth
         /// </summary>
         /// <param name="user">尚未加密的使用者資料</param>
         /// <returns>已加密的使用者資料</returns>
-        public static string CreateToken(string userId)
+        public static string CreateToken(object data)
         {
-            var json = JsonConvert.SerializeObject(userId);
+            var json = JsonConvert.SerializeObject(data);
             var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
             var iv = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 16);
 
@@ -36,13 +36,13 @@ namespace Discord_Member_Check.Auth
         /// </summary>
         /// <param name="token">已加密的使用者資料</param>
         /// <returns>未加密的使用者資料</returns>
-        public static string GetUser(string token)
+        public static T GetUser<T>(string token)
         {
-            if (string.IsNullOrWhiteSpace(token)) return null;
+            if (string.IsNullOrWhiteSpace(token)) return default(T);
 
             token = token.Replace(" ", "+");
             var split = token.Split('.');
-            if (split.Length != 3) return null;
+            if (split.Length != 3) return default(T);
 
             var iv = split[0];
             var encrypt = split[1];
@@ -50,12 +50,12 @@ namespace Discord_Member_Check.Auth
 
             //檢查簽章是否正確
             if (signature != TokenCrypto.ComputeHMACSHA256(iv + "." + encrypt, key.Substring(0, 64)))            
-                return null;            
+                return default(T);
 
             //使用 AES 解密 Payload
             var base64 = TokenCrypto.AESDecrypt(encrypt, key.Substring(0, 16), iv);
             var json = Encoding.UTF8.GetString(Convert.FromBase64String(base64));
-            var payload = JsonConvert.DeserializeObject<string>(json);
+            var payload = JsonConvert.DeserializeObject<T>(json);
 
             return payload;
         }

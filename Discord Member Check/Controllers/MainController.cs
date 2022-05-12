@@ -56,8 +56,9 @@ namespace Discord_Member_Check.Controllers
                 }
                 catch (Exception ex)
                 {
-                    if (!ex.Message.Contains("400")) _logger.LogError(ex.ToString());
                     if (ex.Message.Contains("400")) return new APIResult(ResultStatusCode.BadRequest, "請重新登入Discord");
+
+                    _logger.LogError(ex.ToString());
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -108,7 +109,7 @@ namespace Discord_Member_Check.Controllers
 
             try
             {
-                var discordUser = Auth.TokenManager.GetUser(state);
+                var discordUser = Auth.TokenManager.GetUser<string>(state);
                 if (discordUser == null)
                     return new APIResult(ResultStatusCode.Unauthorized, "Token無效，請重新登入Discord");
 
@@ -141,7 +142,7 @@ namespace Discord_Member_Check.Controllers
 
             try
             {
-                var discordUser = Auth.TokenManager.GetUser(token);
+                var discordUser = Auth.TokenManager.GetUser<string>(token);
                 if (discordUser == null)
                     return new APIResult(ResultStatusCode.Unauthorized, "Token無效");
 
