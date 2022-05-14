@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.57.0.1869" />
-    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.57.0.2665" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
