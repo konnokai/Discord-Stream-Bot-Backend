@@ -117,7 +117,7 @@ namespace Discord_Member_Check.Controllers
 
                 var googleToken = await flow.ExchangeCodeForTokenAsync(discordUser, code, Utility.ServerConfig.RedirectURI, CancellationToken.None);
                 if (googleToken == null)
-                    return new APIResult(ResultStatusCode.Unauthorized, "請登入Google帳號");
+                    return new APIResult(ResultStatusCode.Unauthorized, "請重新登入Google帳號");
 
                 if (string.IsNullOrEmpty(googleToken.AccessToken))
                     return new APIResult(ResultStatusCode.Unauthorized, "Google授權驗證無效\n請解除應用程式授權後再登入Google帳號");
