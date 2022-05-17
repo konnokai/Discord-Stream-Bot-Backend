@@ -1,42 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Discord_Member_Check
 {
-    public class Source
-    {
-        public string type { get; set; }
-        public string id { get; set; }
-    }
-
-    public class Metadata
-    {
-        public bool primary { get; set; }
-        public Source source { get; set; }
-    }
-
-    public class Name
-    {
-        public Metadata metadata { get; set; }
-        public string displayName { get; set; }
-        public string givenName { get; set; }
-        public string displayNameLastFirst { get; set; }
-        public string unstructuredName { get; set; }
-    }
-
-    public class Photo
-    {
-        public Metadata metadata { get; set; }
-        public string url { get; set; }
-    }
-
-    public class GoogleJson
-    {
-        public string resourceName { get; set; }
-        public string etag { get; set; }
-        public List<Name> names { get; set; }
-        public List<Photo> photos { get; set; }
-    }
-
     public class PageInfo
     {
         public int totalResults { get; set; }
@@ -48,6 +14,44 @@ namespace Discord_Member_Check
         public string kind { get; set; }
         public string etag { get; set; }
         public string id { get; set; }
+        public Snippet snippet { get; set; }
+    }
+
+    public class Snippet
+    {
+        public string title { get; set; }
+        public string description { get; set; }
+        public DateTime publishedAt { get; set; }
+        public Thumbnails thumbnails { get; set; }
+        public string country { get; set; }
+    }
+
+    public class Thumbnails
+    {
+        public Default @default { get; set; }
+        public Medium medium { get; set; }
+        public High high { get; set; }
+    }
+
+    public class Default
+    {
+        public string url { get; set; }
+        public int width { get; set; }
+        public int height { get; set; }
+    }
+
+    public class Medium
+    {
+        public string url { get; set; }
+        public int width { get; set; }
+        public int height { get; set; }
+    }
+
+    public class High
+    {
+        public string url { get; set; }
+        public int width { get; set; }
+        public int height { get; set; }
     }
 
     public class YoutubeChannelMeJson

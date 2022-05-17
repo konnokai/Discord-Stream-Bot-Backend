@@ -29,7 +29,7 @@ namespace Discord_Member_Check.Controllers
                     ClientId = Utility.ServerConfig.GoogleClientId,
                     ClientSecret = Utility.ServerConfig.GoogleClientSecret
                 },
-                Scopes = new string[] { "https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/userinfo.profile" },
+                Scopes = new string[] { "https://www.googleapis.com/auth/youtube.force-ssl" },
                 DataStore = new RedisDataStore(RedisConnection.Instance.ConnectionMultiplexer)
             });
         }
@@ -180,7 +180,11 @@ namespace Discord_Member_Check.Controllers
                 try
                 {
                     if (googleToken.IssuedUtc.AddSeconds((double)googleToken.ExpiresInSeconds).Subtract(DateTime.UtcNow).TotalSeconds <= 0)
+                    {
+                        _logger.LogInformation("嘗試刷新AccessToken...");
                         await flow.RefreshTokenAsync(discordUser, googleToken.RefreshToken, CancellationToken.None);
+                        _logger.LogInformation("刷新成功!");
+                    }                        
                 }
                 catch (Exception ex)
                 {
@@ -196,21 +200,10 @@ namespace Discord_Member_Check.Controllers
 
                 try
                 {
-                    GoogleJson userData = JsonConvert.DeserializeObject<GoogleJson>(await webClient.DownloadStringTaskAsync($"https://people.googleapis.com/v1/people/me?personFields=photos%2Cnames"));
-
-                    user.GoogleUserName = userData.names.First().displayName;
-                    user.GoogleUserAvatar = userData.photos.First().url;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex.ToString());
-                    return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
-                }
-
-                try
-                {
-                    YoutubeChannelMeJson youtubeUserData = JsonConvert.DeserializeObject<YoutubeChannelMeJson>(await webClient.DownloadStringTaskAsync($"https://youtube.googleapis.com/youtube/v3/channels?part=id&mine=true"));
-                    user.YoutubeChannelId = youtubeUserData.items.First().id;
+                    var youtubeUserData = JsonConvert.DeserializeObject<YoutubeChannelMeJson>(await webClient.DownloadStringTaskAsync($"https://youtube.googleapis.com/youtube/v3/channels?part=id%2Csnippet&mine=true")).items.First();
+                    user.YoutubeChannelId = youtubeUserData.id;
+                    user.GoogleUserName = youtubeUserData.snippet.title;
+                    user.GoogleUserAvatar = youtubeUserData.snippet.thumbnails.@default.url;
                 }
                 catch (ArgumentNullException)
                 {
@@ -221,6 +214,12 @@ namespace Discord_Member_Check.Controllers
                     if (ex.Message.Contains("403"))
                     {
                         return await RevokeGoogleToken(discordUser, "請重新登入，並在登入Google帳號時勾選\n\"查看、編輯及永久刪除您的 YouTube 影片、評價、留言和字幕\"", ResultStatusCode.Unauthorized);
+                    }
+                    else if (ex.Message.Contains("401"))
+                    {
+                        _logger.LogError("401錯誤");
+                        _logger.LogError(JsonConvert.SerializeObject(googleToken));
+                        return new APIResult(ResultStatusCode.InternalServerError, "請嘗試重新登入Google帳號");
                     }
                     else
                     {
