@@ -182,7 +182,7 @@ namespace Discord_Member_Check.Controllers
                     if (googleToken.IssuedUtc.AddSeconds((double)googleToken.ExpiresInSeconds).Subtract(DateTime.UtcNow).TotalSeconds <= 0)
                     {
                         _logger.LogInformation("嘗試刷新AccessToken...");
-                        await flow.RefreshTokenAsync(discordUser, googleToken.RefreshToken, CancellationToken.None);
+                        googleToken = await flow.RefreshTokenAsync(discordUser, googleToken.RefreshToken, CancellationToken.None);
                         _logger.LogInformation("刷新成功!");
                     }                        
                 }
