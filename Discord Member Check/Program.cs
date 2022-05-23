@@ -20,7 +20,7 @@ namespace Discord_Member_Check
                 {
                     RedisConnection.Init(Utility.ServerConfig.RedisOption);
                     Utility.Redis = RedisConnection.Instance.ConnectionMultiplexer;
-                    Utility.RedisDb = Utility.Redis.GetDatabase();
+                    Utility.RedisDb = Utility.Redis.GetDatabase(1);
                     Utility.RedisSub = Utility.Redis.GetSubscriber();
 
                     logger.Info("Redis¤w³s½u");
