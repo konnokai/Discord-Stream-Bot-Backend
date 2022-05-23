@@ -1,8 +1,7 @@
 ﻿using Newtonsoft.Json;
+using NLog;
 using System;
 using System.IO;
-using NLog;
-using System.Security.Cryptography;
 
 public class ServerConfig
 {

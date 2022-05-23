@@ -30,9 +30,16 @@ namespace Discord_Member_Check
             if (!await _database.KeyExistsAsync(GenerateStoredKey(key, typeof(T))))
                 return default(T);
 
-            var str = await _database.StringGetAsync(GenerateStoredKey(key, typeof(T)));
-            var result = JsonConvert.DeserializeObject<T>(str.ToString());
-            return result;
+            try
+            {
+                var str = await _database.StringGetAsync(GenerateStoredKey(key, typeof(T)));
+                var result = JsonConvert.DeserializeObject<T>(str.ToString());
+                return result;
+            }
+            catch (Exception)
+            {
+                return default(T);
+            }
         }
 
         public async Task StoreAsync<T>(string key, T value)
