@@ -1,6 +1,5 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
-using Google.Apis.Auth.OAuth2.Responses;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -44,6 +43,19 @@ namespace Discord_Member_Check.Controllers
 
             try
             {
+                if (await Utility.RedisDb.KeyExistsAsync($"discord:code:{code}"))
+                    return new APIResult(ResultStatusCode.BadRequest, "請確認是否有插件或軟體導致重複驗證\n如網頁正常顯示資料則無需理會");
+
+                await Utility.RedisDb.StringSetAsync($"discord:code:{code}", "0", TimeSpan.FromHours(1));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString(), "DiscordCallBack - Redis設定錯誤");
+                return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
+            }
+
+            try
+            {
                 using WebClient webClient = new WebClient();
                 TokenData tokenData = null;
                 try
@@ -59,7 +71,7 @@ namespace Discord_Member_Check.Controllers
                 {
                     if (ex.Message.Contains("400")) return new APIResult(ResultStatusCode.BadRequest, "請重新登入Discord");
 
-                    _logger.LogError(ex.ToString());
+                    _logger.LogError(ex.ToString(), "DiscordCallBack - Discord Token交換錯誤");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -76,7 +88,7 @@ namespace Discord_Member_Check.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex.ToString());
+                    _logger.LogError(ex.ToString(), "DiscordCallBack - Discord API回傳錯誤");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -87,7 +99,7 @@ namespace Discord_Member_Check.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogCritical(ex.ToString());
+                    _logger.LogCritical(ex.ToString(), "DiscordCallBack - 建立JWT錯誤");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -95,7 +107,7 @@ namespace Discord_Member_Check.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.ToString());
+                _logger.LogCritical(ex.ToString(), "DiscordCallBack - 整體錯誤");
                 return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
             }
 
@@ -107,6 +119,19 @@ namespace Discord_Member_Check.Controllers
         {
             if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
                 return new APIResult(ResultStatusCode.BadRequest, "參數錯誤");
+
+            try
+            {
+                if (await Utility.RedisDb.KeyExistsAsync($"google:code:{code}"))
+                    return new APIResult(ResultStatusCode.BadRequest, "請確認是否有插件或軟體導致重複驗證\n如網頁正常顯示資料則無需理會");
+
+                await Utility.RedisDb.StringSetAsync($"google:code:{code}", "0", TimeSpan.FromHours(1));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString(), "GoogleCallBack - Redis設定錯誤");
+                return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
+            }
 
             try
             {
@@ -147,7 +172,7 @@ namespace Discord_Member_Check.Controllers
                 }
                 else
                 {
-                    _logger.LogError(ex.ToString());
+                    _logger.LogError(ex.ToString(), "GoogleCallBack - 整體錯誤");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
             }
@@ -189,7 +214,7 @@ namespace Discord_Member_Check.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex.Message); 
+                    _logger.LogError(ex.ToString(), "GetGoogleData - 刷新 Token 錯誤");
                     return await RevokeGoogleToken(discordUser, "無法刷新Google授權\n請重新登入Google帳號", ResultStatusCode.Unauthorized);
                 }
 
@@ -219,18 +244,17 @@ namespace Discord_Member_Check.Controllers
                     else if (ex.Message.Contains("401"))
                     {
                         _logger.LogError("401錯誤");
-                        _logger.LogError(JsonConvert.SerializeObject(googleToken));
                         return new APIResult(ResultStatusCode.InternalServerError, "請嘗試重新登入Google帳號");
                     }
                     else
                     {
-                        _logger.LogError(ex.ToString());
+                        _logger.LogError(ex.ToString(), "GetGoogleData - Youtube API回傳錯誤");
                         return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex.ToString());
+                    _logger.LogError(ex.ToString(), "GetGoogleData - 其他錯誤");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -239,7 +263,7 @@ namespace Discord_Member_Check.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error");
+                _logger.LogError(ex.ToString(), "GetGoogleData - 整體錯誤");
                 return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
             }
         }
@@ -283,7 +307,7 @@ namespace Discord_Member_Check.Controllers
             catch (Exception ex)
             {
                 await flow.DeleteTokenAsync(discordUser, CancellationToken.None);
-                _logger.LogError($"RevokeToken: {ex}");
+                _logger.LogError(ex.ToString(), "RevokeGoogleToken - 整體錯誤");
                 return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報\n請手動至Google帳號安全性解除應用程式授權");
             }
         }
