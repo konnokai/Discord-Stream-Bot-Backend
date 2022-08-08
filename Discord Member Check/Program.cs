@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using NLog.Web;
 using System;
+using System.IO;
 
 namespace Discord_Member_Check
 {
@@ -22,6 +24,24 @@ namespace Discord_Member_Check
                     Utility.Redis = RedisConnection.Instance.ConnectionMultiplexer;
                     Utility.RedisDb = Utility.Redis.GetDatabase(1);
                     Utility.RedisSub = Utility.Redis.GetSubscriber();
+
+                    Utility.RedisSub.Subscribe("member.syncRedisToken", (channel, value) =>
+                    {
+                        if (!value.HasValue || string.IsNullOrEmpty(value))
+                            return;
+
+                        logger.Info($"接收到新的{nameof(ServerConfig.RedisTokenKey)}");
+
+                        Utility.ServerConfig.RedisTokenKey = value.ToString();
+
+                        try { File.WriteAllText("server_config.json", JsonConvert.SerializeObject(Utility.ServerConfig, Formatting.Indented)); }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"設定檔保存失敗: {ex}");
+                            logger.Error($"請手動將此字串填入設定檔中的 \"{nameof(ServerConfig.RedisTokenKey)}\" 欄位: {value.ToString()}");
+                            Environment.Exit(3);
+                        }
+                    });
 
                     logger.Info("Redis已連線");
                 }

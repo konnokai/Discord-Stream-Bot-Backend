@@ -1,5 +1,7 @@
-﻿using Google.Apis.Util.Store;
+﻿using Discord_Member_Check.Auth;
+using Google.Apis.Util.Store;
 using Newtonsoft.Json;
+using NLog.Web;
 using StackExchange.Redis;
 using System;
 using System.Threading.Tasks;
@@ -9,6 +11,7 @@ namespace Discord_Member_Check
     public class RedisDataStore : IDataStore
     {
         private readonly IDatabase _database;
+        private readonly NLog.Logger _logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger(); 
 
         public RedisDataStore(ConnectionMultiplexer connectionMultiplexer)
         {
@@ -30,21 +33,32 @@ namespace Discord_Member_Check
             if (!await _database.KeyExistsAsync(GenerateStoredKey(key, typeof(T))))
                 return default(T);
 
+            var str = (await _database.StringGetAsync(GenerateStoredKey(key, typeof(T)))).ToString();
+
             try
             {
-                var str = await _database.StringGetAsync(GenerateStoredKey(key, typeof(T)));
-                var result = JsonConvert.DeserializeObject<T>(str.ToString());
-                return result;
+                return TokenManager.GetTokenResponseValue<T>(str);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return default(T);
+                _logger.Warn($"RedisDataStore-GetAsync ({key}): 解密失敗，也許還沒加密? {ex}");
+
+                try
+                {
+                    return JsonConvert.DeserializeObject<T>(str);
+                }
+                catch (Exception ex2)
+                {
+                    _logger.Error($"RedisDataStore-GetAsync ({key}): JsonDes失敗 {ex2}");
+                    return default(T);
+                }
             }
         }
 
         public async Task StoreAsync<T>(string key, T value)
         {
-            await _database.StringSetAsync(GenerateStoredKey(key, typeof(T)), JsonConvert.SerializeObject(value));
+            var encValue = TokenManager.CreateTokenResponseToken(value);
+            await _database.StringSetAsync(GenerateStoredKey(key, typeof(T)), encValue);
         }
 
         public async Task<bool> IsExistUserTokenAsync<T>(string key)
