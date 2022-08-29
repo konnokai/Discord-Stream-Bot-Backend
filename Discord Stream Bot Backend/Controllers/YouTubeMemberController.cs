@@ -14,12 +14,12 @@ namespace Discord_Stream_Bot_Backend.Controllers
 {
     [Route("[action]")]
     [ApiController]
-    public class MainController : ControllerBase
+    public class YouTubeMemberController : ControllerBase
     {
-        private readonly ILogger<MainController> _logger;
+        private readonly ILogger<YouTubeMemberController> _logger;
         private readonly GoogleAuthorizationCodeFlow flow;
 
-        public MainController(ILogger<MainController> logger)
+        public YouTubeMemberController(ILogger<YouTubeMemberController> logger)
         {
             _logger = logger;
             flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer

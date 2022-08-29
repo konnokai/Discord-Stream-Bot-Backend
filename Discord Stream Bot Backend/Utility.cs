@@ -9,7 +9,6 @@ namespace Discord_Stream_Bot_Backend
 {
     public static class Utility
     {
-        //public static Dictionary<string, MemberData> MemberDatas = new();
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
