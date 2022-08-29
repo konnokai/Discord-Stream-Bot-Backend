@@ -11,7 +11,7 @@ namespace Discord_Stream_Bot_Backend.Middleware
     public class LogMiddleware
     {
         private readonly RequestDelegate _next;
-        private Logger logger = LogManager.GetLogger("AccessLog");
+        private Logger logger = LogManager.GetLogger("ACCE");
 
         public LogMiddleware(RequestDelegate next)
         {
