@@ -2,7 +2,7 @@
 using System;
 using System.Text;
 
-namespace Discord_Member_Check.Auth
+namespace Discord_Stream_Bot_Backend.Auth
 {
     public class TokenManager
     {

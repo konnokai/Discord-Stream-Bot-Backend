@@ -6,7 +6,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Discord_Member_Check.Middleware
+namespace Discord_Stream_Bot_Backend.Middleware
 {
     public class LogMiddleware
     {

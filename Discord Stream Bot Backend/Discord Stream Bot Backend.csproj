@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>Discord_Member_Check</RootNamespace>
+    <RootNamespace>Discord_Stream_Bot_Backend</RootNamespace>
     <UserSecretsId>c6b9a09f-1cae-4980-ac29-474482e86770</UserSecretsId>
   </PropertyGroup>
 

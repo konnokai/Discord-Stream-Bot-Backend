@@ -1,4 +1,4 @@
-﻿using Discord_Member_Check.Auth;
+﻿using Discord_Stream_Bot_Backend.Auth;
 using Google.Apis.Util.Store;
 using Newtonsoft.Json;
 using NLog.Web;
@@ -6,7 +6,7 @@ using StackExchange.Redis;
 using System;
 using System.Threading.Tasks;
 
-namespace Discord_Member_Check
+namespace Discord_Stream_Bot_Backend
 {
     public class RedisDataStore : IDataStore
     {

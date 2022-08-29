@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace Discord_Member_Check
+namespace Discord_Stream_Bot_Backend
 {
     public static class Utility
     {

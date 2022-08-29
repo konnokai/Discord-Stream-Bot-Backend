@@ -8,7 +8,7 @@
     }
   },
   "profiles": {
-    "Discord_Member_Check": {
+    "Discord_Stream_Bot_Backend": {
       "commandName": "Project",
       "workingDirectory": ".\\bin\\Debug\\net5.0",
       "environmentVariables": {

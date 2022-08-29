@@ -1,4 +1,4 @@
-﻿namespace Discord_Member_Check
+﻿namespace Discord_Stream_Bot_Backend
 {
     public class TokenData
     {

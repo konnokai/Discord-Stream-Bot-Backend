@@ -10,7 +10,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Discord_Member_Check.Controllers
+namespace Discord_Stream_Bot_Backend.Controllers
 {
     [Route("[action]")]
     [ApiController]
