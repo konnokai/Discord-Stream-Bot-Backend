@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Xml;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace Discord_Stream_Bot_Backend.Controllers
 {
@@ -20,15 +24,37 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
         [HttpGet]
         [HttpPost]
-        public ContentResult NotificationCallback([FromQuery(Name = "hub.topic")] string topic, [FromQuery(Name = "hub.challenge")] string challenge, [FromQuery(Name = "hub.mode")] string mode, [FromQuery(Name = "hub.lease_seconds")] string leaseSeconds)
+        public ContentResult NotificationCallback([FromQuery(Name = "hub.topic")] string topic, 
+            [FromQuery(Name = "hub.challenge")] string challenge, 
+            [FromQuery(Name = "hub.mode")] string mode, 
+            [FromQuery(Name = "hub.verify_token")] string verifyToken,
+            [FromQuery(Name = "hub.lease_seconds")] string leaseSeconds)
         {
             try
             {
+                if (!Request.Headers.TryGetValue("User-Agent", out var userAgent) || !userAgent.ToString().StartsWith("FeedFetcher-Google;"))
+                {
+                    _logger.LogWarning("無User-Agent或標頭無效，略過處理");
+                    return Content("400");
+                }
+
                 if (Request.Method == "POST")
                 {
                     try
                     {
-                        var data = ConvertAtomToClass(Request.Body);
+                        if (!Request.Headers.TryGetValue("X-Hub-Signature", out var signature) || !signature.ToString().Contains("="))
+                        {
+                            _logger.LogWarning("無X-Hub-Signature或標頭無效，略過處理");
+                            return Content("400");
+                        }
+
+                        if (!Request.Headers.TryGetValue("Content-Type", out var contentType) || contentType != "application/atom+xml")
+                        {
+                            _logger.LogWarning("無Content-Type或標頭無效，略過處理");
+                            return Content("400");
+                        }
+
+                        var data = ConvertAtomToClass(Request.Body, signature.ToString().Split(new char[] { '=' })[1]);
                         if (data == null)
                             return Content("400");
 
@@ -37,16 +63,32 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, $"NotificationCallback-ConvertAtomToSyndication錯誤\n");
+                        _logger.LogError(ex, $"NotificationCallback-ConvertAtomToClass錯誤\n");
                         return Content("500");
                     }
                 }
                 else if (Request.Method == "GET")
                 {
-                    _logger.LogInformation($"New Callback!\n" + $"topic: {topic}\n" + $"challenge: {challenge}\n" + $"mode: {mode}\n" + $"leaseSeconds: {leaseSeconds}");
+                    _logger.LogInformation($"New Callback!\n" + $"topic: {topic}\n" + $"challenge: {challenge}\n" + $"mode: {mode}\n" + $"verifyToken: {verifyToken}\n" + $"leaseSeconds: {leaseSeconds}");
                     switch (mode)
                     {
                         case "subscribe":
+                            if (!string.IsNullOrEmpty(verifyToken))
+                            {
+                                try
+                                {
+                                    string channelId = new Regex(@"channel_id=(?'ChannelId'[\w\-\\_]{24})").Match(topic).Groups["ChannelId"].Value;
+                                    if (string.IsNullOrEmpty(channelId))
+                                        return Content("400");
+
+                                    Utility.RedisDb.StringSet($"youtube.pubsub.HMACSecret:{channelId}", verifyToken, TimeSpan.FromSeconds(int.Parse(leaseSeconds)));
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "設定VerifyToken錯誤");
+                                    return Content("400");
+                                }
+                            }
                             return Content(challenge);
                         default:
                             _logger.LogWarning($"NotificationCallback錯誤，未知的mode: {mode}");
@@ -67,7 +109,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
         }
 
         //https://ithelp.ithome.com.tw/articles/10186605
-        private YoutubeNotification ConvertAtomToClass(Stream stream)
+        private YoutubeNotification ConvertAtomToClass(Stream stream, string signature)
         {
             try
             {
@@ -92,7 +134,10 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 {
                     var node = doc.GetElementsByTagName("at:deleted-entry")[0];
                     if (node == null)
+                    {
+                        _logger.LogWarning($"無 at:deleted-entry 節點");
                         return null;
+                    }
 
                     youtubeNotification.VideoId = node.Attributes.GetNamedItem("ref").Value.Split(new char[] { ':' })[2];
                     youtubeNotification.ChannelId = doc.GetElementsByTagName("uri")[0]?.InnerText;
@@ -109,6 +154,20 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     return null;
                 }
 
+                if (!Utility.RedisDb.KeyExists($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}"))
+                {
+                    _logger.LogWarning($"Redis無 {youtubeNotification.ChannelId} 的HMACSecret值");
+                    return null;
+                }
+
+                string HMACsecret = Utility.RedisDb.StringGet($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}");
+                string HMACSHA1 = ConvertToHexadecimal(SignWithHmac(xmlText, HMACsecret));
+                if (HMACSHA1 != signature)
+                {
+                    _logger.LogWarning($"HMACSHA1比對失敗: {HMACSHA1} vs {signature}");
+                    return null;
+                }
+
                 return youtubeNotification;
             }
             catch (Exception ex)
@@ -116,6 +175,29 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 _logger.LogError(ex, "ConvertAtomToClass錯誤\n");
                 return null;
             }
+        }
+
+        //https://stackoverflow.com/questions/4390543/facebook-real-time-update-validating-x-hub-signature-sha1-signature-in-c-sharp
+        private static byte[] SignWithHmac(string dataToSign, string keyBody)
+        {
+            byte[] key = Encoding.UTF8.GetBytes(keyBody);
+            byte[] data = Encoding.UTF8.GetBytes(dataToSign);
+            using (var hmacAlgorithm = new HMACSHA1(key))
+            {
+                return hmacAlgorithm.ComputeHash(data);
+            }
+        }
+
+        //https://stackoverflow.com/questions/4390543/facebook-real-time-update-validating-x-hub-signature-sha1-signature-in-c-sharp
+        private static string ConvertToHexadecimal(IEnumerable<byte> bytes)
+        {
+            var builder = new StringBuilder();
+            foreach (var b in bytes)
+            {
+                builder.Append(b.ToString("x2"));
+            }
+
+            return builder.ToString();
         }
     }
 
