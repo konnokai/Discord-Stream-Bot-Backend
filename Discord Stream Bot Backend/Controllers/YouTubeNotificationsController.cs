@@ -109,11 +109,11 @@ namespace Discord_Stream_Bot_Backend.Controllers
         }
 
         //https://ithelp.ithome.com.tw/articles/10186605
-        private YoutubeNotification ConvertAtomToClass(Stream stream, string signature)
+        private YoutubePubSubNotification ConvertAtomToClass(Stream stream, string signature)
         {
             try
             {
-                var youtubeNotification = new YoutubeNotification();
+                var youtubeNotification = new YoutubePubSubNotification();
                 string xmlText = new StreamReader(stream).ReadToEnd();
                 XmlDocument doc = new XmlDocument();
                 doc.LoadXml(xmlText);
@@ -126,9 +126,8 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     youtubeNotification.Link = doc.GetElementsByTagName("link")[0]?.Attributes["href"].Value;
                     youtubeNotification.Published = (DateTime)(doc.GetElementsByTagName("published")[0]?.InnerText.ConvertDateTime());
                     youtubeNotification.Updated = (DateTime)(doc.GetElementsByTagName("updated")[0]?.InnerText.ConvertDateTime());
-                    youtubeNotification.NotificationType = YoutubeNotification.YTNotificationType.CreateOrUpdated;
+                    youtubeNotification.NotificationType = YoutubePubSubNotification.YTNotificationType.CreateOrUpdated;
 
-                    Utility.RedisSub.Publish("youtube.pubsub.update", JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
                 }
                 else if (xmlText.Contains("deleted-entry"))
                 {
@@ -143,9 +142,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     youtubeNotification.ChannelId = doc.GetElementsByTagName("uri")[0]?.InnerText;
                     youtubeNotification.ChannelId = youtubeNotification.ChannelId.Substring(youtubeNotification.ChannelId.Length - 24, 24);
                     youtubeNotification.Published = (DateTime)node.Attributes.GetNamedItem("when").Value.ConvertDateTime();
-                    youtubeNotification.NotificationType = YoutubeNotification.YTNotificationType.Deleted;
-
-                    Utility.RedisSub.Publish("youtube.pubsub.deleted", JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
+                    youtubeNotification.NotificationType = YoutubePubSubNotification.YTNotificationType.Deleted;
                 }
                 else
                 {
@@ -167,6 +164,11 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     _logger.LogWarning($"HMACSHA1比對失敗: {HMACSHA1} vs {signature}");
                     return null;
                 }
+
+                if (youtubeNotification.NotificationType == YoutubePubSubNotification.YTNotificationType.CreateOrUpdated)
+                    Utility.RedisSub.Publish("youtube.pubsub.CreateOrUpdate", JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
+                else
+                    Utility.RedisSub.Publish("youtube.pubsub.Deleted", JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
 
                 return youtubeNotification;
             }
@@ -201,7 +203,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
         }
     }
 
-    public class YoutubeNotification
+    public class YoutubePubSubNotification
     {
         public enum YTNotificationType { CreateOrUpdated, Deleted }
 
