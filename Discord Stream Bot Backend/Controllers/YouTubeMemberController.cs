@@ -199,18 +199,12 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     return new APIResult(ResultStatusCode.Unauthorized, "Google授權驗證無效\n請解除應用程式授權後再登入Google帳號");
 
                 if (string.IsNullOrEmpty(googleToken.RefreshToken))
-                {
                     return await RevokeGoogleToken(discordUser, "無法刷新Google授權\n請重新登入Google帳號", ResultStatusCode.Unauthorized);
-                }
 
                 try
                 {
                     if (googleToken.IssuedUtc.AddSeconds((double)googleToken.ExpiresInSeconds).Subtract(DateTime.UtcNow).TotalSeconds <= 0)
-                    {
-                        _logger.LogInformation("嘗試刷新AccessToken...");
-                        googleToken = await flow.RefreshTokenAsync(discordUser, googleToken.RefreshToken, CancellationToken.None);
-                        _logger.LogInformation("刷新成功!");
-                    }                        
+                        googleToken = await flow.RefreshTokenAsync(discordUser, googleToken.RefreshToken, CancellationToken.None);                    
                 }
                 catch (Exception ex)
                 {
