@@ -5,11 +5,13 @@ using Newtonsoft.Json;
 using NLog.Web;
 using System;
 using System.IO;
+using System.Reflection;
 
 namespace Discord_Stream_Bot_Backend
 {
     public class Program
     {
+        public static string VERSION => GetLinkerTime(Assembly.GetEntryAssembly());
         public static void Main(string[] args)
         {
             var logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
@@ -17,6 +19,7 @@ namespace Discord_Stream_Bot_Backend
             {
                 logger.Debug("init main");
                 Utility.ServerConfig.InitServerConfig();
+                logger.Info(VERSION + " ªì©l¤Æ¤¤");
 
                 try
                 {
@@ -81,6 +84,24 @@ namespace Discord_Stream_Bot_Backend
                     logging.SetMinimumLevel(LogLevel.Trace);
                 })
                 .UseNLog();
+        }
+
+        public static string GetLinkerTime(Assembly assembly)
+        {
+            const string BuildVersionMetadataPrefix = "+build";
+
+            var attribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+            if (attribute?.InformationalVersion != null)
+            {
+                var value = attribute.InformationalVersion;
+                var index = value.IndexOf(BuildVersionMetadataPrefix);
+                if (index > 0)
+                {
+                    value = value[(index + BuildVersionMetadataPrefix.Length)..];
+                    return value;
+                }
+            }
+            return default;
         }
     }
 }
