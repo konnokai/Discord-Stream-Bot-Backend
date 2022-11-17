@@ -26,15 +26,35 @@ namespace Discord_Stream_Bot_Backend.Middleware
             {
                 var remoteIpAddress = context.GetRemoteIPAddress();
                 var requestUrl = context.Request.GetDisplayUrl();
-                string redisKey = $"server.errorcount:{remoteIpAddress.ToString().Replace(":", "-").Replace(".", "-")}";
+                string badReqRedisKey = $"server.errorcount:{remoteIpAddress.ToString().Replace(":", "-").Replace(".", "-")}";
+                string rngReqRedisKey = $"server.rngvideocount:{remoteIpAddress.ToString().Replace(":", "-").Replace(".", "-")}";
 
                 if (!context.Request.Headers.TryGetValue("Content-Type", out var contentType) || contentType != "application/atom+xml")
                 {
-                    var badCount = await Utility.RedisDb.StringGetAsync(redisKey);
+                    var badCount = await Utility.RedisDb.StringGetAsync(badReqRedisKey);
                     if (badCount.HasValue && int.Parse(badCount.ToString()) >= 5)
                     {
-                        await Utility.RedisDb.StringIncrementAsync(redisKey);
-                        await Utility.RedisDb.KeyExpireAsync(redisKey, TimeSpan.FromHours(1));
+                        await Utility.RedisDb.StringIncrementAsync(badReqRedisKey);
+                        await Utility.RedisDb.KeyExpireAsync(badReqRedisKey, TimeSpan.FromHours(1));
+                        var errorMessage = JsonConvert.SerializeObject(new
+                        {
+                            ErrorMessage = "429 Too Many Requests"
+                        });
+                        var bytes = Encoding.UTF8.GetBytes(errorMessage);
+
+                        context.Response.StatusCode = 429;
+                        await originalResponseBodyStream.WriteAsync(
+                            bytes, 0, bytes.Length);
+                        return;
+                    }
+                }
+                if (requestUrl.ToLower().Contains("randomvideo"))
+                {
+                    var rngReqCount = await Utility.RedisDb.StringGetAsync(rngReqRedisKey);
+                    if (rngReqCount.HasValue && int.Parse(rngReqCount.ToString()) >= 5)
+                    {
+                        await Utility.RedisDb.StringIncrementAsync(rngReqRedisKey);
+                        await Utility.RedisDb.KeyExpireAsync(rngReqRedisKey, TimeSpan.FromHours(1));
                         var errorMessage = JsonConvert.SerializeObject(new
                         {
                             ErrorMessage = "429 Too Many Requests"
@@ -53,8 +73,13 @@ namespace Discord_Stream_Bot_Backend.Middleware
                 logger.Info($"{remoteIpAddress} | {context.Request.Method} | {context.Response.StatusCode} | {requestUrl}");
                 if (context.Response.StatusCode >= 400 && context.Response.StatusCode < 500)
                 {
-                    await Utility.RedisDb.StringIncrementAsync(redisKey);
-                    await Utility.RedisDb.KeyExpireAsync(redisKey, TimeSpan.FromHours(1));
+                    await Utility.RedisDb.StringIncrementAsync(badReqRedisKey);
+                    await Utility.RedisDb.KeyExpireAsync(badReqRedisKey, TimeSpan.FromHours(1));
+                }
+                if (requestUrl.ToLower().Contains("randomvideo"))
+                {
+                    await Utility.RedisDb.StringIncrementAsync(rngReqRedisKey);
+                    await Utility.RedisDb.KeyExpireAsync(rngReqRedisKey, TimeSpan.FromHours(1));
                 }
             }
             catch (Exception e)

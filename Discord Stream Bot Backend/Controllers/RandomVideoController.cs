@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Cors;
+﻿using Discord_Stream_Bot_Backend.Auth;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using NLog;
 using System;
@@ -40,7 +41,10 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 if (Utility.NowRecordList.Any())
                     randomVideoUrlList.AddRange(Utility.NowRecordList.Select((x) => $"https://www.youtube.com/watch?v={x}"));
 
-                return Redirect(randomVideoUrlList[new Random().Next(0, randomVideoUrlList.Count)]);
+                string randomUrl = randomVideoUrlList[RNG.Next(randomVideoUrlList.Count)];
+                logger.Info(randomUrl);
+
+                return Redirect(randomUrl);
             }
             catch (Exception ex)
             {

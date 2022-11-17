@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Discord Stream Bot Backend": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:7220;http://localhost:7221"
+    }
+  }
+}
