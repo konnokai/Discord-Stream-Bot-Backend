@@ -47,9 +47,6 @@ namespace Discord_Stream_Bot_Backend
             });
 
             services.AddHttpClient();
-
-            // Add OpenAPI v3 document
-            services.AddSwaggerDocument();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -66,10 +63,6 @@ namespace Discord_Stream_Bot_Backend
             {
                 endpoints.MapControllers();
             });
-
-            app.UseOpenApi();
-            app.UseSwaggerUi3();
         }
-    }
-   
+    }   
 }
