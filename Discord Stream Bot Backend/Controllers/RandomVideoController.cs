@@ -24,6 +24,13 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 "https://www.youtube.com/watch?v=uSvGR5H7lUk"
             };
 
+            if (System.IO.File.Exists("RandomVideoUrl.txt"))
+            {
+                string[] strings = System.IO.File.ReadAllLines("RandomVideoUrl.txt");
+                if (strings.Any())
+                    randomVideoUrlList.AddRange(strings.Where((x) => !string.IsNullOrWhiteSpace(x)));
+            }
+
             if (Utility.NowRecordList.Any())
                 randomVideoUrlList.AddRange(Utility.NowRecordList.Select((x) => $"https://www.youtube.com/watch?v={x}"));
 
