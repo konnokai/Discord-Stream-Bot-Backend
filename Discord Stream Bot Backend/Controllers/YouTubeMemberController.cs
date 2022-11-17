@@ -5,8 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,12 +19,14 @@ namespace Discord_Stream_Bot_Backend.Controllers
     [ApiController]
     public class YouTubeMemberController : ControllerBase
     {
-        private readonly ILogger<YouTubeMemberController> _logger;
+        private readonly ILogger<YouTubeMemberController> _logger; 
+        private readonly HttpClient _httpClient;
         private readonly GoogleAuthorizationCodeFlow flow;
 
-        public YouTubeMemberController(ILogger<YouTubeMemberController> logger)
+        public YouTubeMemberController(ILogger<YouTubeMemberController> logger, HttpClient httpClient)
         {
             _logger = logger;
+            _httpClient = httpClient;
             flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
                 ClientSecrets = new ClientSecrets
@@ -56,20 +61,34 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                using WebClient webClient = new WebClient();
                 TokenData tokenData = null;
                 try
                 {
-                    webClient.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
-                    tokenData = JsonConvert.DeserializeObject<TokenData>(await webClient.UploadStringTaskAsync("https://discord.com/api/oauth2/token",
-                        $"code={code}&client_id={Utility.ServerConfig.DiscordClientId}&client_secret={Utility.ServerConfig.DiscordClientSecret}&redirect_uri={Utility.UrlEncode(Utility.ServerConfig.RedirectURI)}&grant_type=authorization_code"));
+                    var content = new FormUrlEncodedContent(new KeyValuePair<string, string>[]
+                    {
+                        new("code", code),
+                        new("client_id", Utility.ServerConfig.DiscordClientId),
+                        new("client_secret", Utility.ServerConfig.DiscordClientSecret),
+                        new("redirect_uri", Utility.ServerConfig.RedirectURI),
+                        new("grant_type", "authorization_code")
+                    });
+                    content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+                    var response = await _httpClient.PostAsync("https://discord.com/api/v10/oauth2/token", content);
+                    
+                    response.EnsureSuccessStatusCode();
+
+                    tokenData = JsonConvert.DeserializeObject<TokenData>(await response.Content.ReadAsStringAsync());
 
                     if (tokenData == null || tokenData.access_token == null)
                         return new APIResult(ResultStatusCode.Unauthorized, "認證錯誤，請重新登入Discord");
                 }
                 catch (Exception ex)
                 {
-                    if (ex.Message.Contains("400")) return new APIResult(ResultStatusCode.BadRequest, "請重新登入Discord");
+                    if (ex.Message.Contains("400"))
+                    {
+                        _logger.LogWarning(ex.ToString());
+                        return new APIResult(ResultStatusCode.BadRequest, "請重新登入Discord");
+                    }
 
                     _logger.LogError(ex.ToString(), "DiscordCallBack - Discord Token交換錯誤");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
@@ -78,10 +97,11 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 DiscordUser discordUser = null;
                 try
                 {
-                    webClient.Headers.Clear();
-                    webClient.Headers.Add(HttpRequestHeader.Accept, "application/json");
-                    webClient.Headers.Add(HttpRequestHeader.Authorization, $"Bearer {tokenData.access_token}");
-                    var discordMeJson = await webClient.DownloadStringTaskAsync("https://discord.com/api/v9/users/@me");
+                    _httpClient.DefaultRequestHeaders.Clear();                    
+                    //_httpClient.DefaultRequestHeaders.Add("Accept", "application/json");                    
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue($"Bearer", tokenData.access_token);
+
+                    var discordMeJson = await _httpClient.GetStringAsync("https://discord.com/api/v10/users/@me");
                     discordUser = JsonConvert.DeserializeObject<DiscordUser>(discordMeJson);
 
                     _logger.LogInformation($"Discord User OAuth Done: {discordUser.username} ({discordUser.id})");
@@ -213,14 +233,14 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 }
 
                 MemberData user = new MemberData();
-                using WebClient webClient = new WebClient();
-                webClient.Headers.Add(HttpRequestHeader.Accept, "application/json");
-                webClient.Headers.Add(HttpRequestHeader.Authorization, $"Bearer {googleToken.AccessToken}");
-                webClient.Headers.Add(HttpRequestHeader.AcceptLanguage, "zh-TW, en;q=0.9;, *;q=0.5");
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", googleToken.AccessToken);
 
                 try
                 {
-                    var youtubeUserData = JsonConvert.DeserializeObject<YoutubeChannelMeJson>(await webClient.DownloadStringTaskAsync($"https://youtube.googleapis.com/youtube/v3/channels?part=id%2Csnippet&mine=true")).items.First();
+                    var youtubeUserData = JsonConvert.DeserializeObject<YoutubeChannelMeJson>(
+                        await _httpClient.GetStringAsync($"https://youtube.googleapis.com/youtube/v3/channels?part=id%2Csnippet&mine=true"))
+                            .items.First();
+
                     user.YoutubeChannelId = youtubeUserData.id;
                     user.GoogleUserName = youtubeUserData.snippet.title;
                     user.GoogleUserAvatar = youtubeUserData.snippet.thumbnails.@default.url;
@@ -233,11 +253,12 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 {
                     if (ex.Message.Contains("403"))
                     {
+                        _logger.LogError(ex.ToString(), $"403錯誤");
                         return await RevokeGoogleToken(discordUser, "請重新登入，並在登入Google帳號時勾選\n\"查看、編輯及永久刪除您的 YouTube 影片、評價、留言和字幕\"", ResultStatusCode.Unauthorized);
                     }
                     else if (ex.Message.Contains("401"))
                     {
-                        _logger.LogError("401錯誤");
+                        _logger.LogError(ex.ToString(), $"401錯誤");
                         return new APIResult(ResultStatusCode.InternalServerError, "請嘗試重新登入Google帳號");
                     }
                     else

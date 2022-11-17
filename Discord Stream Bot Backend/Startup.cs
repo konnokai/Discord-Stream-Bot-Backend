@@ -46,6 +46,8 @@ namespace Discord_Stream_Bot_Backend
                 options.AllowSynchronousIO = true;
             });
 
+            services.AddHttpClient();
+
             // Add OpenAPI v3 document
             services.AddSwaggerDocument();
         }
