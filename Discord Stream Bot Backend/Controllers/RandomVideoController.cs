@@ -41,7 +41,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 if (Utility.NowRecordList.Any())
                     randomVideoUrlList.AddRange(Utility.NowRecordList.Select((x) => $"https://www.youtube.com/watch?v={x}"));
 
-                string randomUrl = randomVideoUrlList[RNG.Next(randomVideoUrlList.Count)];
+                string randomUrl = randomVideoUrlList[RNG.Next(randomVideoUrlList.Count) - 1];
                 logger.Info(randomUrl);
 
                 return Redirect(randomUrl);
