@@ -84,6 +84,9 @@ namespace Discord_Stream_Bot_Backend.Middleware
 
                 await _next(context);
 
+                if (requestUrl.EndsWith("statuscheck") && context.Response.StatusCode == 200)
+                    return;
+
                 logger.Info($"{remoteIpAddress} | {context.Request.Method} | {context.Response.StatusCode} | {requestUrl}");
 
                 if (!isRedisError)
