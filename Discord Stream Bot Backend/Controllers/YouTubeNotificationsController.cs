@@ -151,12 +151,14 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     return null;
                 }
 
+                // Todo: 這邊可能需要呼叫小幫手來嘗試重新註冊
                 if (!Utility.RedisDb.KeyExists($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}"))
                 {
                     _logger.LogWarning($"Redis無 {youtubeNotification.ChannelId} 的HMACSecret值");
                     return null;
                 }
 
+                // 這邊也是需要重新註冊
                 string HMACsecret = Utility.RedisDb.StringGet($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}");
                 string HMACSHA1 = ConvertToHexadecimal(SignWithHmac(xmlText, HMACsecret));
                 if (HMACSHA1 != signature)
