@@ -12,7 +12,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
         [HttpGet]
         public ContentResult StatusCheck()
         {
-            var result= new ContentResult();
+            var result = new ContentResult();
 
             if (HttpContext.Request.Headers.Authorization != "Basic Enna_Alouette")
             {
@@ -20,7 +20,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 result.Content = JsonConvert.SerializeObject(new { ErrorMessage = "403 Forbidden" });
             }
             else
-            { 
+            {
                 result.StatusCode = 200;
                 result.Content = "Ok";
             }
