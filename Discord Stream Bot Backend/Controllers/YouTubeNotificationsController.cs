@@ -133,7 +133,6 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     youtubeNotification.Published = (DateTime)(doc.GetElementsByTagName("published")[0]?.InnerText.ConvertDateTime());
                     youtubeNotification.Updated = (DateTime)(doc.GetElementsByTagName("updated")[0]?.InnerText.ConvertDateTime());
                     youtubeNotification.NotificationType = YoutubePubSubNotification.YTNotificationType.CreateOrUpdated;
-
                 }
                 else if (xmlText.Contains("deleted-entry"))
                 {
@@ -168,7 +167,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 string HMACSHA1 = ConvertToHexadecimal(SignWithHmac(xmlText, HMACsecret));
                 if (HMACSHA1 != signature)
                 {
-                    _logger.LogWarning("HMACSHA1比對失敗: {HMACSHA1} vs {signature}", HMACSHA1, signature);
+                    _logger.LogWarning("HMACSHA1比對失敗: {HMACSHA1} vs {Signature}", HMACSHA1, signature);
                     Utility.RedisSub.Publish("youtube.pubsub.NeedRegister", youtubeNotification.ChannelId);
                     return null;
                 }
