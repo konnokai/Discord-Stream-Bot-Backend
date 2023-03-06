@@ -19,7 +19,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
     [ApiController]
     public class YouTubeMemberController : ControllerBase
     {
-        private readonly ILogger<YouTubeMemberController> _logger; 
+        private readonly ILogger<YouTubeMemberController> _logger;
         private readonly HttpClient _httpClient;
         private readonly GoogleAuthorizationCodeFlow flow;
 
@@ -74,7 +74,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     });
                     content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     var response = await _httpClient.PostAsync("https://discord.com/api/v10/oauth2/token", content);
-                    
+
                     response.EnsureSuccessStatusCode();
 
                     tokenData = JsonConvert.DeserializeObject<TokenData>(await response.Content.ReadAsStringAsync());
@@ -97,7 +97,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 DiscordUser discordUser = null;
                 try
                 {
-                    _httpClient.DefaultRequestHeaders.Clear();                    
+                    _httpClient.DefaultRequestHeaders.Clear();
                     //_httpClient.DefaultRequestHeaders.Add("Accept", "application/json");                    
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue($"Bearer", tokenData.access_token);
 
@@ -224,7 +224,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 try
                 {
                     if (googleToken.IssuedUtc.AddSeconds((double)googleToken.ExpiresInSeconds).Subtract(DateTime.UtcNow).TotalSeconds <= 0)
-                        googleToken = await flow.RefreshTokenAsync(discordUser, googleToken.RefreshToken, CancellationToken.None);                    
+                        googleToken = await flow.RefreshTokenAsync(discordUser, googleToken.RefreshToken, CancellationToken.None);
                 }
                 catch (Exception ex)
                 {

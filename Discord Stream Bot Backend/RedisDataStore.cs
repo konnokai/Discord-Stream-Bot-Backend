@@ -11,7 +11,7 @@ namespace Discord_Stream_Bot_Backend
     public class RedisDataStore : IDataStore
     {
         private readonly IDatabase _database;
-        private readonly NLog.Logger _logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger(); 
+        private readonly NLog.Logger _logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
 
         public RedisDataStore(ConnectionMultiplexer connectionMultiplexer)
         {

@@ -12,7 +12,7 @@ namespace Discord_Stream_Bot_Backend
 {
     public static class Utility
     {
-        public static List<string> NowRecordList { get; private set; } = new List<string>();       
+        public static List<string> NowRecordList { get; private set; } = new List<string>();
         public static ConnectionMultiplexer Redis { get; set; }
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }

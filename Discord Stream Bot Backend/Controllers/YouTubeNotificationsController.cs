@@ -24,9 +24,9 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
         [HttpGet]
         [HttpPost]
-        public ContentResult NotificationCallback([FromQuery(Name = "hub.topic")] string topic, 
-            [FromQuery(Name = "hub.challenge")] string challenge, 
-            [FromQuery(Name = "hub.mode")] string mode, 
+        public ContentResult NotificationCallback([FromQuery(Name = "hub.topic")] string topic,
+            [FromQuery(Name = "hub.challenge")] string challenge,
+            [FromQuery(Name = "hub.mode")] string mode,
             [FromQuery(Name = "hub.verify_token")] string verifyToken,
             [FromQuery(Name = "hub.lease_seconds")] string leaseSeconds)
         {
@@ -244,7 +244,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
             {
                 return Convert.ToDateTime(text);
             }
-            catch 
+            catch
             {
                 return new DateTime();
             }

@@ -29,7 +29,7 @@ namespace Discord_Stream_Bot_Backend
             {
                 options.AddPolicy(name: "allowGET", builder =>
                 {
-                    builder.WithOrigins($"{hostUri.Scheme}://{hostUri.Authority}" )
+                    builder.WithOrigins($"{hostUri.Scheme}://{hostUri.Authority}")
                            .WithMethods("GET")
                            .WithHeaders("Content-Type");
                 });
@@ -64,5 +64,5 @@ namespace Discord_Stream_Bot_Backend
                 endpoints.MapControllers();
             });
         }
-    }   
+    }
 }

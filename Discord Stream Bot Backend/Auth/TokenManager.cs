@@ -77,7 +77,7 @@ namespace Discord_Stream_Bot_Backend.Auth
             var signature = split[2];
 
             //檢查簽章是否正確
-            if (signature != TokenCrypto.ComputeHMACSHA256(iv + "." + encrypt, key.Substring(0, 64)))            
+            if (signature != TokenCrypto.ComputeHMACSHA256(iv + "." + encrypt, key.Substring(0, 64)))
                 return default(T);
 
             //使用 AES 解密 Payload
