@@ -42,7 +42,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 {
                     try
                     {
-                        if (!Request.Headers.TryGetValue("X-Hub-Signature", out var signature) || !signature.ToString().Contains("="))
+                        if (!Request.Headers.TryGetValue("X-Hub-Signature", out var signature) || !signature.ToString().Contains('='))
                         {
                             _logger.LogWarning("無X-Hub-Signature或標頭無效，略過處理");
                             return Content("400");
@@ -58,7 +58,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                         if (data == null)
                             return Content("400");
 
-                        _logger.LogInformation(data.ToString());
+                        _logger.LogInformation("{Data}", data.ToString());
                         return Content("200");
                     }
                     catch (Exception ex)
@@ -69,7 +69,13 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 }
                 else if (Request.Method == "GET")
                 {
-                    _logger.LogInformation($"New Callback!\n" + $"topic: {topic}\n" + $"challenge: {challenge}\n" + $"mode: {mode}\n" + $"verifyToken: {verifyToken}\n" + $"leaseSeconds: {leaseSeconds}");
+                    _logger.LogInformation("New Callback!\n"
+                        + "topic: {topic}\n"
+                        + "challenge: {challenge}\n"
+                        + "mode: {mode}\n"
+                        + "verifyToken: {verifyToken}\n"
+                        + "leaseSeconds: {leaseSeconds}",
+                        topic, challenge, mode, verifyToken, leaseSeconds);
                     switch (mode)
                     {
                         case "subscribe":
@@ -91,7 +97,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                             }
                             return Content(challenge);
                         default:
-                            _logger.LogWarning($"NotificationCallback錯誤，未知的mode: {mode}");
+                            _logger.LogWarning("NotificationCallback錯誤，未知的mode: {Mode}", mode);
                             return Content("400");
                     }
                 }
@@ -115,7 +121,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
             {
                 var youtubeNotification = new YoutubePubSubNotification();
                 string xmlText = new StreamReader(stream).ReadToEnd();
-                XmlDocument doc = new XmlDocument();
+                XmlDocument doc = new();
                 doc.LoadXml(xmlText);
 
                 if (xmlText.Contains("https://www.youtube.com/xml/feeds/videos.xml?channel_id"))
@@ -147,13 +153,13 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 else
                 {
                     _logger.LogWarning("未知的Atom");
-                    _logger.LogWarning(xmlText);
+                    _logger.LogWarning("{Atom}", xmlText);
                     return null;
                 }
 
                 if (!Utility.RedisDb.KeyExists($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}"))
                 {
-                    _logger.LogWarning($"Redis無 {youtubeNotification.ChannelId} 的HMACSecret值");
+                    _logger.LogWarning("Redis無 {YoutubeChannelId} 的HMACSecret值", youtubeNotification.ChannelId);
                     Utility.RedisSub.Publish("youtube.pubsub.NeedRegister", youtubeNotification.ChannelId);
                     return null;
                 }
@@ -162,7 +168,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 string HMACSHA1 = ConvertToHexadecimal(SignWithHmac(xmlText, HMACsecret));
                 if (HMACSHA1 != signature)
                 {
-                    _logger.LogWarning($"HMACSHA1比對失敗: {HMACSHA1} vs {signature}");
+                    _logger.LogWarning("HMACSHA1比對失敗: {HMACSHA1} vs {signature}", HMACSHA1, signature);
                     Utility.RedisSub.Publish("youtube.pubsub.NeedRegister", youtubeNotification.ChannelId);
                     return null;
                 }
@@ -186,10 +192,8 @@ namespace Discord_Stream_Bot_Backend.Controllers
         {
             byte[] key = Encoding.UTF8.GetBytes(keyBody);
             byte[] data = Encoding.UTF8.GetBytes(dataToSign);
-            using (var hmacAlgorithm = new HMACSHA1(key))
-            {
-                return hmacAlgorithm.ComputeHash(data);
-            }
+            using var hmacAlgorithm = new HMACSHA1(key);
+            return hmacAlgorithm.ComputeHash(data);
         }
 
         //https://stackoverflow.com/questions/4390543/facebook-real-time-update-validating-x-hub-signature-sha1-signature-in-c-sharp
@@ -225,6 +229,8 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     return $"({NotificationType} at {Updated}) {ChannelId} - {VideoId} | {Title}";
                 case YTNotificationType.Deleted:
                     return $"({NotificationType} at {Published}) {ChannelId} - {VideoId}";
+                default:
+                    break;
             }
             return "";
         }

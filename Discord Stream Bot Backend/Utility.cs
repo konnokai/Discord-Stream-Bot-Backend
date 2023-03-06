@@ -34,7 +34,7 @@ namespace Discord_Stream_Bot_Backend
         /// <returns></returns>
         public static string UrlEncode(string value)
         {
-            StringBuilder result = new StringBuilder();
+            StringBuilder result = new();
 
             foreach (char symbol in value)
             {
@@ -151,7 +151,9 @@ namespace Discord_Stream_Bot_Backend
             this.message = message;
         }
 
+#pragma warning disable IDE1006 // 命名樣式
         public int code { get; set; }
         public object message { get; set; }
+#pragma warning restore IDE1006 // 命名樣式
     }
 }
