@@ -267,6 +267,16 @@ namespace Discord_Stream_Bot_Backend.Controllers
                         return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                     }
                 }
+                catch (HttpRequestException httpEx) when (httpEx.Message.Contains("403"))
+                {
+                    _logger.LogError(httpEx, "GetGoogleData - 403錯誤");
+
+                    string resetDay = "今";
+                    if (DateTime.Now.Hour >= 16)
+                        resetDay = "明";
+
+                    return new APIResult(ResultStatusCode.InternalServerError, $"已綁定但API無法回傳訊息，請於{resetDay}日16:00後再至Discord驗證");
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "GetGoogleData - 其他錯誤");
