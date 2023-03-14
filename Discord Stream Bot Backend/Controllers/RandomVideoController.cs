@@ -44,7 +44,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 var index = RNG.Next(randomVideoUrlList.Count);
                 logger.Info($"randomVideoUrlList.Count: {randomVideoUrlList.Count}, RNG.Next: {index}");
 
-                string randomUrl = randomVideoUrlList[Math.Max(0, Math.Min(randomVideoUrlList.Count, index))];
+                string randomUrl = randomVideoUrlList[Math.Max(0, Math.Min(randomVideoUrlList.Count - 1, index))];
                 logger.Info(randomUrl);
 
                 return Redirect(randomUrl);
