@@ -5,6 +5,7 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Discord_Stream_Bot_Backend.Controllers
 {
@@ -16,8 +17,17 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
         [EnableCors("allowGET")]
         [HttpGet]
-        public RedirectResult RandomVideo()
+        public async Task<RedirectResult> RandomVideo()
         {
+            try
+            {
+                await Utility.RedisDb.StringIncrementAsync("discord_stream_bot:randomVideoClickCount");
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Redis Increment Error");
+            }
+
             try
             {
                 List<string> randomVideoUrlList = new List<string>
