@@ -97,7 +97,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 DiscordUser discordUser = null;
                 try
                 {
-                    _httpClient.DefaultRequestHeaders.Clear();            
+                    _httpClient.DefaultRequestHeaders.Clear();              
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue($"Bearer", tokenData.access_token);
 
                     var discordMeJson = await _httpClient.GetStringAsync("https://discord.com/api/v10/users/@me");
@@ -313,7 +313,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                await Utility.RedisSub.PublishAsync("member.revokeToken", discordUser);
+                await Utility.RedisSub.PublishAsync(new StackExchange.Redis.RedisChannel("member.revokeToken", StackExchange.Redis.RedisChannel.PatternMode.Literal), discordUser);
 
                 var googleToken = await flow.LoadTokenAsync(discordUser, CancellationToken.None);
                 if (googleToken == null)

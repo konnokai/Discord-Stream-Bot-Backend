@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using NLog;
 using NLog.Web;
 using System;
 using System.IO;
@@ -14,7 +15,7 @@ namespace Discord_Stream_Bot_Backend
         public static string VERSION => GetLinkerTime(Assembly.GetEntryAssembly());
         public static void Main(string[] args)
         {
-            var logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+            var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
             try
             {
                 logger.Debug("init main");
@@ -28,7 +29,7 @@ namespace Discord_Stream_Bot_Backend
                     Utility.RedisDb = Utility.Redis.GetDatabase(1);
                     Utility.RedisSub = Utility.Redis.GetSubscriber();
 
-                    Utility.RedisSub.Subscribe("member.syncRedisToken", (channel, value) =>
+                    Utility.RedisSub.Subscribe(new StackExchange.Redis.RedisChannel("member.syncRedisToken", StackExchange.Redis.RedisChannel.PatternMode.Literal), (channel, value) =>
                     {
                         if (!value.HasValue || string.IsNullOrEmpty(value))
                             return;
@@ -65,7 +66,7 @@ namespace Discord_Stream_Bot_Backend
             finally
             {
                 // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
-                NLog.LogManager.Shutdown();
+                LogManager.Shutdown();
                 Utility.RedisSub.UnsubscribeAll();
                 Utility.Redis.Dispose();
             }
@@ -81,7 +82,7 @@ namespace Discord_Stream_Bot_Backend
                 .ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
-                    logging.SetMinimumLevel(LogLevel.Trace);
+                    logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
                 })
                 .UseNLog();
         }

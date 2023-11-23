@@ -159,7 +159,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 if (!Utility.RedisDb.KeyExists($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}"))
                 {
                     _logger.LogWarning("Redis無 {YoutubeChannelId} 的HMACSecret值", youtubeNotification.ChannelId);
-                    Utility.RedisSub.Publish("youtube.pubsub.NeedRegister", youtubeNotification.ChannelId);
+                    Utility.RedisSub.Publish(new StackExchange.Redis.RedisChannel("youtube.pubsub.NeedRegister", StackExchange.Redis.RedisChannel.PatternMode.Literal), youtubeNotification.ChannelId);
                     return null;
                 }
 
@@ -168,14 +168,14 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 if (HMACSHA1 != signature)
                 {
                     _logger.LogWarning("HMACSHA1比對失敗: {HMACSHA1} vs {Signature}", HMACSHA1, signature);
-                    Utility.RedisSub.Publish("youtube.pubsub.NeedRegister", youtubeNotification.ChannelId);
+                    Utility.RedisSub.Publish(new StackExchange.Redis.RedisChannel("youtube.pubsub.NeedRegister", StackExchange.Redis.RedisChannel.PatternMode.Literal), youtubeNotification.ChannelId);
                     return null;
                 }
 
                 if (youtubeNotification.NotificationType == YoutubePubSubNotification.YTNotificationType.CreateOrUpdated)
-                    Utility.RedisSub.Publish("youtube.pubsub.CreateOrUpdate", JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
+                    Utility.RedisSub.Publish(new StackExchange.Redis.RedisChannel("youtube.pubsub.CreateOrUpdate", StackExchange.Redis.RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
                 else
-                    Utility.RedisSub.Publish("youtube.pubsub.Deleted", JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
+                    Utility.RedisSub.Publish(new StackExchange.Redis.RedisChannel("youtube.pubsub.Deleted", StackExchange.Redis.RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
 
                 return youtubeNotification;
             }
