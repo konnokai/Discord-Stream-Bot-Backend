@@ -63,12 +63,17 @@ namespace Discord_Stream_Bot_Backend
             {
                 // if you are allowing these forward headers, please ensure you are restricting context.Connection.RemoteIpAddress
                 // to cloud flare ips: https://www.cloudflare.com/ips/
-                string header = (context.Request.Headers["CF-Connecting-IP"].FirstOrDefault() ?? context.Request.Headers["X-Forwarded-For"].FirstOrDefault()).Split(',').FirstOrDefault();
+                string header = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault() ?? context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                if (header == null)
+                    return context.Connection.RemoteIpAddress;
+
+                header = header.Split(',')[0];
                 if (IPAddress.TryParse(header, out IPAddress ip))
                 {
                     return ip;
                 }
             }
+
             return context.Connection.RemoteIpAddress;
         }
 

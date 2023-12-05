@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Routing;
 using Newtonsoft.Json;
 using NLog;
 using StackExchange.Redis;
@@ -84,7 +85,9 @@ namespace Discord_Stream_Bot_Backend.Middleware
 
                 await _next(context);
 
-                if (requestUrl.EndsWith("statuscheck") && context.Response.StatusCode == 200)
+                // Generate from ChatGPT
+                var route = context.GetRouteValue("action")?.ToString()?.ToLower();
+                if (route != null && route == "statuscheck" && context.Response.StatusCode == 200)
                     return;
 
                 logger.Info($"{remoteIpAddress} | {context.Request.Method} | {context.Response.StatusCode} | {requestUrl}");
