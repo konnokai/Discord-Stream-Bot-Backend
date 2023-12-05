@@ -97,7 +97,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 DiscordUser discordUser = null;
                 try
                 {
-                    _httpClient.DefaultRequestHeaders.Clear();              
+                    _httpClient.DefaultRequestHeaders.Clear();
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue($"Bearer", tokenData.access_token);
 
                     var discordMeJson = await _httpClient.GetStringAsync("https://discord.com/api/v10/users/@me");
