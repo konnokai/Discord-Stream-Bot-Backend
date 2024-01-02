@@ -21,7 +21,7 @@ public class ServerConfig
         try { File.WriteAllText("server_config_example.json", JsonConvert.SerializeObject(new ServerConfig(), Formatting.Indented)); } catch { }
         if (!File.Exists("server_config.json"))
         {
-            logger.Error($"server_config.json遺失，請依照 {Path.GetFullPath("server_config_example.json")} 內的格式填入正確的數值");
+            logger.Error($"server_config.json 遺失，請依照 {Path.GetFullPath("server_config_example.json")} 內的格式填入正確的數值");
             if (!Console.IsInputRedirected)
                 Console.ReadKey();
             Environment.Exit(3);
@@ -33,14 +33,14 @@ public class ServerConfig
         {
             if (string.IsNullOrWhiteSpace(config.DiscordClientId))
             {
-                logger.Error("DiscordToken遺失，請輸入至server_config.json後重開伺服器");
+                logger.Error("DiscordClientId 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
             }
             if (string.IsNullOrWhiteSpace(config.DiscordClientSecret))
             {
-                logger.Error("DiscordToken遺失，請輸入至server_config.json後重開伺服器");
+                logger.Error("DiscordClientSecret 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -48,7 +48,7 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.GoogleClientId))
             {
-                logger.Error("GoogleClientId遺失，請輸入至server_config.json後重開伺服器");
+                logger.Error("GoogleClientId 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -56,7 +56,7 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.GoogleClientSecret))
             {
-                logger.Error("GoogleClientSecret遺失，請輸入至server_config.json後重開伺服器");
+                logger.Error("GoogleClientSecret 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -64,7 +64,7 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.RedirectURI))
             {
-                logger.Error("RedirectURI遺失，請輸入至server_config.json後重開伺服器");
+                logger.Error("RedirectURI 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -72,7 +72,7 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.RedisOption))
             {
-                logger.Error("RedisOption遺失，請輸入至server_config.json後重開伺服器");
+                logger.Error("RedisOption 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -89,7 +89,7 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.TokenKey) || string.IsNullOrWhiteSpace(TokenKey))
             {
-                logger.Error($"{nameof(TokenKey)}遺失，將重新建立隨機亂數");
+                logger.Error($"{nameof(TokenKey)} 遺失，將重新建立隨機亂數");
 
                 TokenKey = GenRandomKey();
 
@@ -104,7 +104,7 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {
-                logger.Error($"{nameof(RedisTokenKey)}遺失，將重新建立隨機亂數");
+                logger.Error($"{nameof(RedisTokenKey)} 遺失，將重新建立隨機亂數");
 
                 RedisTokenKey = GenRandomKey();
 

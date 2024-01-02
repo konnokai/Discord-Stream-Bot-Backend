@@ -13,7 +13,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
     [ApiController]
     public class RandomVideoController : Controller
     {
-        Logger logger = LogManager.GetLogger("RngVideo");
+        readonly Logger logger = LogManager.GetLogger("RngVideo");
 
         [EnableCors("allowGET")]
         [HttpGet]
@@ -25,12 +25,12 @@ namespace Discord_Stream_Bot_Backend.Controllers
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Redis Increment Error");
+                logger.Error(ex, "Redis Increment Error\n");
             }
 
             try
             {
-                List<string> randomVideoUrlList = new List<string>
+                List<string> randomVideoUrlList = new()
                 {
                     "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                     "https://www.youtube.com/watch?v=ST-Q-hX9Yzo",
@@ -45,7 +45,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 {
                     string[] strings = System.IO.File.ReadAllLines("RandomVideoUrl.txt");
                     if (strings.Any())
-                        randomVideoUrlList.AddRange(strings.Where((x) => !string.IsNullOrWhiteSpace(x)));
+                        randomVideoUrlList.AddRange(strings.Where((x) => !string.IsNullOrWhiteSpace(x)).Select((x) => x.Trim()));
                 }
 
                 if (Utility.NowRecordList.Any())
@@ -61,7 +61,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
             }
             catch (Exception ex)
             {
-                logger.Error(ex);
+                logger.Error(ex, "RandomVideo\n");
                 return Redirect("https://dcbot.konnokai.me/stream");
             }
         }

@@ -75,12 +75,12 @@ namespace Discord_Stream_Bot_Backend.Middleware
                 }
                 catch (RedisConnectionException redisEx)
                 {
-                    logger.Error(redisEx, "Redis掛掉了");
+                    logger.Error(redisEx, "Redis 掛掉了");
                     isRedisError = true;
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Middleware錯誤");
+                    logger.Error(ex, "Middleware 錯誤");
                 }
 
                 await _next(context);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using NLog;
 using StackExchange.Redis;
 using System;
@@ -38,7 +39,7 @@ namespace Discord_Stream_Bot_Backend
 
             foreach (char symbol in value)
             {
-                if (UnReservedChars.IndexOf(symbol) != -1)
+                if (UnReservedChars.Contains(symbol))
                 {
                     result.Append(symbol);
                 }
@@ -152,13 +153,13 @@ namespace Discord_Stream_Bot_Backend
         /// <param name="message">Object訊息</param>
         public APIResult(ResultStatusCode code, object message = null)
         {
-            this.code = (int)code;
-            this.message = message;
+            Code = (int)code;
+            Message = message;
         }
 
-#pragma warning disable IDE1006 // 命名樣式
-        public int code { get; set; }
-        public object message { get; set; }
-#pragma warning restore IDE1006 // 命名樣式
+        [JsonProperty("code")]
+        public int Code { get; set; }
+        [JsonProperty("message")]
+        public object Message { get; set; }
     }
 }

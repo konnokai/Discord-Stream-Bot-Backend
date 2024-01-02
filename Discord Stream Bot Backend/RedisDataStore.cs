@@ -49,7 +49,7 @@ namespace Discord_Stream_Bot_Backend
                 }
                 catch (Exception ex2)
                 {
-                    _logger.Error($"RedisDataStore-GetAsync ({key}): JsonDes失敗 {ex2}");
+                    _logger.Error($"RedisDataStore-GetAsync ({key}): JsonDes 失敗 {ex2}");
                     return default(T);
                 }
             }

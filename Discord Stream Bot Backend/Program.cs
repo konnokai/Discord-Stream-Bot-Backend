@@ -34,7 +34,7 @@ namespace Discord_Stream_Bot_Backend
                         if (!value.HasValue || string.IsNullOrEmpty(value))
                             return;
 
-                        logger.Info($"接收到新的{nameof(ServerConfig.RedisTokenKey)}");
+                        logger.Info($"接收到新的 {nameof(ServerConfig.RedisTokenKey)}");
 
                         Utility.ServerConfig.RedisTokenKey = value.ToString();
 
@@ -51,7 +51,7 @@ namespace Discord_Stream_Bot_Backend
                 }
                 catch (Exception exception)
                 {
-                    logger.Error(exception, "Redis連線錯誤，請確認伺服器是否已開啟\r\n");
+                    logger.Error(exception, "Redis 連線錯誤，請確認伺服器是否已開啟\r\n");
                     return;
                 }
 

@@ -55,7 +55,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "DiscordCallBack - Redis設定錯誤");
+                _logger.LogError(ex, "DiscordCallBack - Redis設定錯誤\n");
                 return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
             }
 
@@ -80,17 +80,17 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     tokenData = JsonConvert.DeserializeObject<TokenData>(await response.Content.ReadAsStringAsync());
 
                     if (tokenData == null || tokenData.access_token == null)
-                        return new APIResult(ResultStatusCode.Unauthorized, "認證錯誤，請重新登入Discord");
+                        return new APIResult(ResultStatusCode.Unauthorized, "認證錯誤，請重新登入 Discord");
                 }
                 catch (Exception ex)
                 {
                     if (ex.Message.Contains("400"))
                     {
                         _logger.LogWarning("{ExceptionMessage}", ex.ToString());
-                        return new APIResult(ResultStatusCode.BadRequest, "請重新登入Discord");
+                        return new APIResult(ResultStatusCode.BadRequest, "請重新登入 Discord");
                     }
 
-                    _logger.LogError(ex, "DiscordCallBack - Discord Token交換錯誤");
+                    _logger.LogError(ex, "DiscordCallBack - Discord Token 交換錯誤\n");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -107,7 +107,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "DiscordCallBack - Discord API回傳錯誤");
+                    _logger.LogError(ex, "DiscordCallBack - Discord API 回傳錯誤\n");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -118,7 +118,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogCritical(ex, "DiscordCallBack - 建立JWT錯誤");
+                    _logger.LogCritical(ex, "DiscordCallBack - 建立 JWT 錯誤\n");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -126,7 +126,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogCritical(ex, "DiscordCallBack - 整體錯誤");
+                _logger.LogCritical(ex, "DiscordCallBack - 整體錯誤\n");
                 return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
             }
 
@@ -148,7 +148,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "GoogleCallBack - Redis設定錯誤");
+                _logger.LogError(ex, "GoogleCallBack - Redis 設定錯誤\n");
                 return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
             }
 
@@ -156,16 +156,16 @@ namespace Discord_Stream_Bot_Backend.Controllers
             {
                 var discordUser = Auth.TokenManager.GetUser<string>(state);
                 if (string.IsNullOrEmpty(discordUser))
-                    return new APIResult(ResultStatusCode.Unauthorized, "Token無效，請重新登入Discord");
+                    return new APIResult(ResultStatusCode.Unauthorized, "Token 無效，請重新登入 Discord");
 
                 var googleUser = await flow.LoadTokenAsync(discordUser, CancellationToken.None);
 
                 var googleToken = await flow.ExchangeCodeForTokenAsync(discordUser, code, Utility.ServerConfig.RedirectURI, CancellationToken.None);
                 if (googleToken == null)
-                    return new APIResult(ResultStatusCode.Unauthorized, "請重新登入Google帳號");
+                    return new APIResult(ResultStatusCode.Unauthorized, "請重新登入 Google 帳號");
 
                 if (string.IsNullOrEmpty(googleToken.AccessToken))
-                    return new APIResult(ResultStatusCode.Unauthorized, "Google授權驗證無效\n請解除應用程式授權後再登入Google帳號");
+                    return new APIResult(ResultStatusCode.Unauthorized, "Google 授權驗證無效\n請解除應用程式授權後再登入 Google 帳號");
 
                 if (!string.IsNullOrEmpty(googleToken.RefreshToken))
                 {
@@ -179,19 +179,19 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 }
                 else
                 {
-                    return await RevokeGoogleToken(discordUser, "無法刷新Google授權\n請重新登入Google帳號", ResultStatusCode.Unauthorized);
+                    return await RevokeGoogleToken(discordUser, "無法刷新 Google 授權\n請重新登入 Google 帳號", ResultStatusCode.Unauthorized);
                 }
             }
             catch (Exception ex)
             {
                 if (ex.Message.Contains("invalid_grant"))
                 {
-                    _logger.LogWarning("偵測到invalid_grant");
-                    return new APIResult(ResultStatusCode.Unauthorized, "Google授權驗證無效或尚未登入Google\n請解除應用程式授權後再登入Google帳號");
+                    _logger.LogWarning("偵測到 invalid_grant");
+                    return new APIResult(ResultStatusCode.Unauthorized, "Google 授權驗證無效或尚未登入\n請解除應用程式授權後再登入 Google 帳號");
                 }
                 else
                 {
-                    _logger.LogError(ex, "GoogleCallBack - 整體錯誤");
+                    _logger.LogError(ex, "GoogleCallBack - 整體錯誤\n");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
             }
@@ -202,23 +202,23 @@ namespace Discord_Stream_Bot_Backend.Controllers
         public async Task<APIResult> GetGoogleData(string token = "")
         {
             if (string.IsNullOrEmpty(token))
-                return new APIResult(ResultStatusCode.BadRequest, "Token不可為空");
+                return new APIResult(ResultStatusCode.BadRequest, "Token 不可為空");
 
             try
             {
                 var discordUser = Auth.TokenManager.GetUser<string>(token);
                 if (string.IsNullOrEmpty(discordUser))
-                    return new APIResult(ResultStatusCode.Unauthorized, "Token無效");
+                    return new APIResult(ResultStatusCode.Unauthorized, "Token 無效");
 
                 var googleToken = await flow.LoadTokenAsync(discordUser, CancellationToken.None);
                 if (googleToken == null)
-                    return new APIResult(ResultStatusCode.Unauthorized, "請登入Google帳號");
+                    return new APIResult(ResultStatusCode.Unauthorized, "請登入 Google 帳號");
 
                 if (string.IsNullOrEmpty(googleToken.AccessToken))
-                    return new APIResult(ResultStatusCode.Unauthorized, "Google授權驗證無效\n請解除應用程式授權後再登入Google帳號");
+                    return new APIResult(ResultStatusCode.Unauthorized, "Google 授權驗證無效\n請解除應用程式授權後再登入 Google 帳號");
 
                 if (string.IsNullOrEmpty(googleToken.RefreshToken))
-                    return await RevokeGoogleToken(discordUser, "無法刷新Google授權\n請重新登入Google帳號", ResultStatusCode.Unauthorized);
+                    return await RevokeGoogleToken(discordUser, "無法刷新 Google 授權\n請重新登入 Google 帳號", ResultStatusCode.Unauthorized);
 
                 try
                 {
@@ -227,8 +227,8 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "GetGoogleData - 刷新 Token 錯誤");
-                    return await RevokeGoogleToken(discordUser, "無法刷新Google授權\n請重新登入Google帳號", ResultStatusCode.Unauthorized);
+                    _logger.LogError(ex, "GetGoogleData - 刷新 Token 錯誤\n");
+                    return await RevokeGoogleToken(discordUser, "無法刷新 Google 授權\n請重新登入 Google 帳號", ResultStatusCode.Unauthorized);
                 }
 
                 MemberData user = new();
@@ -246,39 +246,39 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 }
                 catch (ArgumentNullException)
                 {
-                    return await RevokeGoogleToken(discordUser, "請確認此Google帳號有Youtube頻道", ResultStatusCode.BadRequest);
+                    return await RevokeGoogleToken(discordUser, "請確認此 Google 帳號有 Youtube 頻道", ResultStatusCode.BadRequest);
                 }
                 catch (WebException ex)
                 {
                     if (ex.Message.Contains("403"))
                     {
-                        _logger.LogError(ex, $"403錯誤");
-                        return await RevokeGoogleToken(discordUser, "請重新登入，並在登入Google帳號時勾選\n\"查看、編輯及永久刪除您的 YouTube 影片、評價、留言和字幕\"", ResultStatusCode.Unauthorized);
+                        _logger.LogError(ex, $"403錯誤\n");
+                        return await RevokeGoogleToken(discordUser, "請重新登入，並在登入 Google 帳號時勾選\n\"查看、編輯及永久刪除您的 YouTube 影片、評價、留言和字幕\"", ResultStatusCode.Unauthorized);
                     }
                     else if (ex.Message.Contains("401"))
                     {
-                        _logger.LogError(ex, $"401錯誤");
-                        return new APIResult(ResultStatusCode.InternalServerError, "請嘗試重新登入Google帳號");
+                        _logger.LogError(ex, $"401錯誤\n");
+                        return new APIResult(ResultStatusCode.InternalServerError, "請嘗試重新登入 Google 帳號");
                     }
                     else
                     {
-                        _logger.LogError(ex, "GetGoogleData - Youtube API回傳錯誤");
+                        _logger.LogError(ex, "GetGoogleData - Youtube API回傳錯誤\n");
                         return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                     }
                 }
                 catch (HttpRequestException httpEx) when (httpEx.Message.Contains("403"))
                 {
-                    _logger.LogError(httpEx, "GetGoogleData - 403錯誤");
+                    _logger.LogError(httpEx, "GetGoogleData - 403錯誤\n");
 
                     string resetDay = "今";
                     if (DateTime.Now.Hour >= 16)
                         resetDay = "明";
 
-                    return new APIResult(ResultStatusCode.InternalServerError, $"已綁定但API無法回傳訊息，請於{resetDay}日16:00後再至Discord驗證");
+                    return new APIResult(ResultStatusCode.InternalServerError, $"已綁定但 API 無法回傳訊息，請於{resetDay}日 16:00 後再至 Discord 驗證");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "GetGoogleData - 其他錯誤");
+                    _logger.LogError(ex, "GetGoogleData - 其他錯誤\n");
                     return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
                 }
 
@@ -287,7 +287,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "GetGoogleData - 整體錯誤");
+                _logger.LogError(ex, "GetGoogleData - 整體錯誤\n");
                 return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報");
             }
         }
@@ -297,11 +297,11 @@ namespace Discord_Stream_Bot_Backend.Controllers
         public async Task<APIResult> UnlinkGoogle(string token = "")
         {
             if (string.IsNullOrEmpty(token))
-                return new APIResult(ResultStatusCode.BadRequest, "Token不可為空");
+                return new APIResult(ResultStatusCode.BadRequest, "Token 不可為空");
 
             var discordUser = Auth.TokenManager.GetUser<string>(token);
             if (string.IsNullOrEmpty(discordUser))
-                return new APIResult(ResultStatusCode.Unauthorized, "Token無效，請重新登入Discord");
+                return new APIResult(ResultStatusCode.Unauthorized, "Token 無效，請重新登入 Discord");
 
             return await RevokeGoogleToken(discordUser);
         }
@@ -317,10 +317,10 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
                 var googleToken = await flow.LoadTokenAsync(discordUser, CancellationToken.None);
                 if (googleToken == null)
-                    return new APIResult(ResultStatusCode.Unauthorized, "未登入Google帳號或已解除綁定");
+                    return new APIResult(ResultStatusCode.Unauthorized, "未登入 Google 帳號或已解除綁定");
 
                 if (string.IsNullOrEmpty(googleToken.AccessToken))
-                    return new APIResult(ResultStatusCode.Unauthorized, "Google授權驗證無效\n請手動至Google帳號安全性解除應用程式授權");
+                    return new APIResult(ResultStatusCode.Unauthorized, "Google 授權驗證無效\n請手動至 Google 帳號安全性解除應用程式授權");
 
                 string revokeToken = googleToken.RefreshToken ?? googleToken.AccessToken;
 
@@ -331,8 +331,8 @@ namespace Discord_Stream_Bot_Backend.Controllers
             catch (Exception ex)
             {
                 await flow.DeleteTokenAsync(discordUser, CancellationToken.None);
-                _logger.LogError(ex, "RevokeGoogleToken - 整體錯誤");
-                return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報\n請手動至Google帳號安全性解除應用程式授權");
+                _logger.LogError(ex, "RevokeGoogleToken - 整體錯誤\n");
+                return new APIResult(ResultStatusCode.InternalServerError, "伺服器內部錯誤，請向孤之界回報\n請手動至 Google 帳號安全性解除應用程式授權");
             }
         }
     }
