@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using StackExchange.Redis;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -17,6 +20,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
     public class YouTubeNotificationsController : ControllerBase
     {
         private readonly ILogger<YouTubeNotificationsController> _logger;
+        private readonly ConcurrentDictionary<YoutubePubSubNotification.YTNotificationType, List<YoutubePubSubNotification>> _needRePublishVideoList = new();
         public YouTubeNotificationsController(ILogger<YouTubeNotificationsController> logger)
         {
             _logger = logger;
@@ -159,7 +163,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 if (!Utility.RedisDb.KeyExists($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}"))
                 {
                     _logger.LogWarning("Redis 無 {YoutubeChannelId} 的 HMACSecret 值", youtubeNotification.ChannelId);
-                    Utility.RedisSub.Publish(new StackExchange.Redis.RedisChannel("youtube.pubsub.NeedRegister", StackExchange.Redis.RedisChannel.PatternMode.Literal), youtubeNotification.ChannelId);
+                    Utility.RedisSub.Publish(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), youtubeNotification.ChannelId);
                     return null;
                 }
 
@@ -168,14 +172,45 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 if (HMACSHA1 != signature)
                 {
                     _logger.LogWarning("HMACSHA1 比對失敗: {HMACSHA1} vs {Signature}", HMACSHA1, signature);
-                    Utility.RedisSub.Publish(new StackExchange.Redis.RedisChannel("youtube.pubsub.NeedRegister", StackExchange.Redis.RedisChannel.PatternMode.Literal), youtubeNotification.ChannelId);
+                    Utility.RedisSub.Publish(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), youtubeNotification.ChannelId);
                     return null;
                 }
 
-                if (youtubeNotification.NotificationType == YoutubePubSubNotification.YTNotificationType.CreateOrUpdated)
-                    Utility.RedisSub.Publish(new StackExchange.Redis.RedisChannel("youtube.pubsub.CreateOrUpdate", StackExchange.Redis.RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
+                if (Utility.RedisSub.Publish(new RedisChannel(GetRedisChannelName(youtubeNotification.NotificationType), RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(youtubeNotification)) >= 1)
+                {
+                    if (_needRePublishVideoList.Any())
+                    {
+                        _logger.LogWarning("已可重新發送通知訊息");
+
+                        foreach (var item in _needRePublishVideoList)
+                        {
+                            foreach (var video in item.Value)
+                            {
+                                _logger.LogInformation("重新發送通知訊息: {VideoId}", video.VideoId);
+                                Utility.RedisSub.Publish(new RedisChannel(GetRedisChannelName(video.NotificationType), RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(video), CommandFlags.FireAndForget);
+                            }
+                        }
+
+                        _logger.LogInformation("已重新發送全部通知訊息");
+                        _needRePublishVideoList.Clear();
+                    }
+                }
                 else
-                    Utility.RedisSub.Publish(new StackExchange.Redis.RedisChannel("youtube.pubsub.Deleted", StackExchange.Redis.RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(youtubeNotification), StackExchange.Redis.CommandFlags.FireAndForget);
+                {
+                    _needRePublishVideoList.AddOrUpdate(youtubeNotification.NotificationType,
+                        new List<YoutubePubSubNotification>() { youtubeNotification },
+                        (type, list) =>
+                        {
+                            if (!list.Any((x) => x.VideoId == youtubeNotification.VideoId))
+                            {
+                                list.Add(youtubeNotification);
+                            }
+
+                            return list;
+                        });
+
+                    _logger.LogWarning("通知訊息發送失敗，儲存到清單待命: {VideoId}", youtubeNotification.VideoId);
+                }
 
                 return youtubeNotification;
             }
@@ -185,6 +220,9 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 return null;
             }
         }
+
+        private static string GetRedisChannelName(YoutubePubSubNotification.YTNotificationType notificationType)
+            => notificationType == YoutubePubSubNotification.YTNotificationType.CreateOrUpdated ? "youtube.pubsub.CreateOrUpdate" : "youtube.pubsub.Deleted";
 
         //https://stackoverflow.com/questions/4390543/facebook-real-time-update-validating-x-hub-signature-sha1-signature-in-c-sharp
         private static byte[] SignWithHmac(string dataToSign, string keyBody)
