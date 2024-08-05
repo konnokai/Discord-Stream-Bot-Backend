@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Discord_Stream_Bot_Backend
+namespace Discord_Stream_Bot_Backend.Model
 {
     public class PageInfo
     {

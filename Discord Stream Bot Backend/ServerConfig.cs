@@ -5,6 +5,7 @@ using System.IO;
 
 public class ServerConfig
 {
+    public string BililiveWebHookUrl { get; set; } = "";
     public string DiscordClientId { get; set; } = "";
     public string DiscordClientSecret { get; set; } = "";
     public string GoogleClientId { get; set; } = "";
@@ -78,6 +79,7 @@ public class ServerConfig
                 Environment.Exit(3);
             }
 
+            BililiveWebHookUrl = config.BililiveWebHookUrl;
             DiscordClientId = config.DiscordClientId;
             DiscordClientSecret = config.DiscordClientSecret;
             GoogleClientId = config.GoogleClientId;
