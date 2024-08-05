@@ -1,12 +1,14 @@
 ﻿using Discord;
 using Discord.Webhook;
 using Discord_Stream_Bot_Backend.Model;
+using Discord_Stream_Bot_Backend.Model.BiliBili;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Discord_Stream_Bot_Backend.Controllers
@@ -16,10 +18,13 @@ namespace Discord_Stream_Bot_Backend.Controllers
     public class BililiveRecorderWebHookController : Controller
     {
         private readonly ILogger<BililiveRecorderWebHookController> _logger;
+        private readonly HttpClient _httpClient;
 
-        public BililiveRecorderWebHookController(ILogger<BililiveRecorderWebHookController> logger)
+        public BililiveRecorderWebHookController(ILogger<BililiveRecorderWebHookController> logger, HttpClient httpClient)
         {
             _logger = logger;
+            _httpClient = httpClient;
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
         }
 
         [HttpPost]
@@ -60,14 +65,28 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder.WithColor(40, 40, 40)
-                    .WithTitle(eventData.Title)
-                    .WithDescription(eventData.Name)
-                    .WithUrl($"https://live.bilibili.com/{eventData.RoomId}")
-                    .AddField("直播狀態", "開台中", true)
-                    .AddField("分類", eventData.AreaNameParent, true)
-                    .AddField("子分類", eventData.AreaNameChild, true);
+                var embedBuilder = new EmbedBuilder();
+                embedBuilder.WithColor(0, 229, 132)
+                   .WithTitle(eventData.Title)
+                   .WithDescription(eventData.Name)
+                   .WithUrl($"https://live.bilibili.com/{eventData.RoomId}")
+                   .AddField("直播狀態", "開台中", true)
+                   .AddField("分類", eventData.AreaNameParent, true)
+                   .AddField("子分類", eventData.AreaNameChild, true);
+
+                try
+                {
+                    var getRoomInfoJson = JsonConvert.DeserializeObject<BiliBiliGetRoomInfoJson>(await _httpClient.GetStringAsync($"https://api.live.bilibili.com/room/v1/Room/get_info?room_id={eventData.RoomId}"));
+                    var getLiveUserJson = JsonConvert.DeserializeObject<BiliBiliGetLiveUserInfoJson>(await _httpClient.GetStringAsync($"https://api.live.bilibili.com/live_user/v1/Master/info?uid={getRoomInfoJson.Data.Uid}"));
+
+                    embedBuilder.WithDescription(Format.Url(getLiveUserJson.Data.Info.Uname, $"https://space.bilibili.com/{getLiveUserJson.Data.Info.Uid}/"));
+                    embedBuilder.WithImageUrl(getRoomInfoJson.Data.Keyframe);
+                    embedBuilder.WithThumbnailUrl(getLiveUserJson.Data.Info.Face);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Get Bililive Info 失敗");
+                }
 
                 var discordWebhookClient = new DiscordWebhookClient(Utility.ServerConfig.BililiveWebHookUrl);
                 await discordWebhookClient.SendMessageAsync(embeds: new List<Embed>() { embedBuilder.Build() });
