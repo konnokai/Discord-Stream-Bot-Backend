@@ -98,6 +98,9 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 DiscordUser discordUser = null;
                 try
                 {
+                    // https://docs.discordnet.dev/guides/bearer_token/bearer_token_guide.html
+                    // 想嘗試改成用 DiscordRestClient 來撈資料，但這樣回傳的 User 結構會變動導致前端抓不到正確的資料，暫時作罷
+
                     _httpClient.DefaultRequestHeaders.Clear();
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue($"Bearer", tokenData.access_token);
 

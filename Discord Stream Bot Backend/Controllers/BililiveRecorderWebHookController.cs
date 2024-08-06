@@ -76,7 +76,10 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
                 try
                 {
+                    // https://socialsisteryi.github.io/bilibili-API-collect/docs/live/info.html#%E8%8E%B7%E5%8F%96%E7%9B%B4%E6%92%AD%E9%97%B4%E4%BF%A1%E6%81%AF
                     var getRoomInfoJson = JsonConvert.DeserializeObject<BiliBiliGetRoomInfoJson>(await _httpClient.GetStringAsync($"https://api.live.bilibili.com/room/v1/Room/get_info?room_id={eventData.RoomId}"));
+
+                    // https://socialsisteryi.github.io/bilibili-API-collect/docs/live/info.html#%E8%8E%B7%E5%8F%96%E4%B8%BB%E6%92%AD%E4%BF%A1%E6%81%AF
                     var getLiveUserJson = JsonConvert.DeserializeObject<BiliBiliGetLiveUserInfoJson>(await _httpClient.GetStringAsync($"https://api.live.bilibili.com/live_user/v1/Master/info?uid={getRoomInfoJson.Data.Uid}"));
 
                     embedBuilder.WithDescription(Format.Url(getLiveUserJson.Data.Info.Uname, $"https://space.bilibili.com/{getLiveUserJson.Data.Info.Uid}/"));
