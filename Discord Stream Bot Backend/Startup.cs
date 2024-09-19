@@ -1,9 +1,11 @@
+using Discord_Stream_Bot_Backend.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using TwitchLib.EventSub.Webhooks.Extensions;
 
 namespace Discord_Stream_Bot_Backend
 {
@@ -41,6 +43,15 @@ namespace Discord_Stream_Bot_Backend
                 });
             });
 
+            services.AddTwitchLibEventSubWebhooks(config =>
+            {
+                config.CallbackPath = "/TwitchWebHooks";
+                config.Secret = Utility.TwitchWebHookSecret;
+                config.EnableLogging = false;
+            });
+
+            services.AddHostedService<EventSubHostedService>();
+
             services.Configure<KestrelServerOptions>(options =>
             {
                 options.AllowSynchronousIO = true;
@@ -58,6 +69,8 @@ namespace Discord_Stream_Bot_Backend
             app.UseRouting();
             app.UseCors();
             app.UseAuthorization();
+
+            app.UseTwitchLibEventSubWebhooks();
 
             app.UseEndpoints(endpoints =>
             {

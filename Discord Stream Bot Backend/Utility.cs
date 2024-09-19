@@ -18,6 +18,7 @@ namespace Discord_Stream_Bot_Backend
         public static ISubscriber RedisSub { get; set; }
         public static IDatabase RedisDb { get; set; }
         public static ServerConfig ServerConfig { get; set; } = new ServerConfig();
+        public static string TwitchWebHookSecret { get; set; }
 
         private const string UnReservedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~";
         private static readonly Logger logger;

@@ -126,7 +126,7 @@ public class ServerConfig
         }
     }
 
-    private static string GenRandomKey()
+    public static string GenRandomKey(int length = 128)
     {
         var characters = "ABCDEF_GHIJKLMNOPQRSTUVWXYZ@abcdefghijklmnopqrstuvwx-yz0123456789";
         var Charsarr = new char[128];
@@ -138,6 +138,7 @@ public class ServerConfig
         }
 
         var resultString = new string(Charsarr);
+        resultString = resultString[Math.Min(length, resultString.Length)..];
         return resultString;
     }
 }

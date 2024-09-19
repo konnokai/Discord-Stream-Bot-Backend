@@ -5,8 +5,10 @@ using Newtonsoft.Json;
 using NLog;
 using NLog.Web;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 
 namespace Discord_Stream_Bot_Backend
 {
@@ -15,12 +17,22 @@ namespace Discord_Stream_Bot_Backend
         public static string VERSION => GetLinkerTime(Assembly.GetEntryAssembly());
         public static void Main(string[] args)
         {
+#if DEBUG
+            Console.WriteLine("Waiting for debugger to attach");
+            while (!Debugger.IsAttached)
+            {
+                Thread.Sleep(100);
+            }
+            Console.WriteLine("Debugger attached");
+#endif
+
             var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
             try
             {
                 logger.Debug("init main");
-                Utility.ServerConfig.InitServerConfig();
                 logger.Info(VERSION + " 初始化中");
+
+                Utility.ServerConfig.InitServerConfig();
 
                 try
                 {
@@ -48,6 +60,23 @@ namespace Discord_Stream_Bot_Backend
                     });
 
                     logger.Info("Redis已連線");
+
+                    try
+                    {
+                        Utility.TwitchWebHookSecret = Utility.Redis.GetDatabase(0).StringGet("twitch:webhook_secret");
+                        if (string.IsNullOrEmpty(Utility.TwitchWebHookSecret))
+                        {
+                            logger.Warn("缺少 TwitchWebHookSecret，嘗試重新建立...");
+
+                            Utility.TwitchWebHookSecret = ServerConfig.GenRandomKey(64);
+                            Utility.Redis.GetDatabase(0).StringSet("twitch:webhook_secret", Utility.TwitchWebHookSecret);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "獲取 TwitchWebHookSecret 失敗\r\n");
+                        return;
+                    }
                 }
                 catch (Exception exception)
                 {
