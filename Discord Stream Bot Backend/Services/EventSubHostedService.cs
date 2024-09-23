@@ -45,7 +45,7 @@ namespace Discord_Stream_Bot_Backend.Services
         private void _eventSubWebhooks_OnStreamOffline(object sender, TwitchLib.EventSub.Webhooks.Core.EventArgs.Stream.StreamOfflineArgs e)
         {
             _logger.LogInformation("Twitch 直播已離線: {UserName} ({UserId})", e.Notification.Event.BroadcasterUserName, e.Notification.Event.BroadcasterUserId);
-            Utility.RedisSub.Publish(new("twitch:stream_offline", StackExchange.Redis.RedisChannel.PatternMode.Literal), e.Notification.Event.BroadcasterUserId);
+            Utility.RedisSub.Publish(new("twitch:stream_offline", StackExchange.Redis.RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(e.Notification.Event));
         }
 
         private void _eventSubWebhooks_OnChannelUpdate(object sender, ChannelUpdateArgs e)

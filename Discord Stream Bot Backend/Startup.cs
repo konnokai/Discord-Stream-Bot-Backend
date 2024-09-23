@@ -26,7 +26,7 @@ namespace Discord_Stream_Bot_Backend
                 options.UseMemberCasing();
             });
 
-            var hostUri = new Uri(Utility.ServerConfig.RedirectURI);
+            var hostUri = new Uri(Utility.ServerConfig.RedirectUrl);
             services.AddCors(options =>
             {
                 options.AddPolicy(name: "allowGET", builder =>
@@ -64,7 +64,6 @@ namespace Discord_Stream_Bot_Backend
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseMiddleware<Middleware.LogMiddleware>();
-            app.UseHttpsRedirection();
 
             app.UseRouting();
             app.UseCors();

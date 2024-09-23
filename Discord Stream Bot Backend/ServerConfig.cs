@@ -10,19 +10,21 @@ public class ServerConfig
     public string DiscordClientSecret { get; set; } = "";
     public string GoogleClientId { get; set; } = "";
     public string GoogleClientSecret { get; set; } = "";
-    public string RedirectURI { get; set; } = "";
+    public string TwitchClientId { get; set; } = "";
+    public string TwitchClientSecret { get; set; } = "";
+    public string RedirectUrl { get; set; } = "";
     public string RedisOption { get; set; } = "127.0.0.1,syncTimeout=3000";
     public string TokenKey { get; set; } = "";
     public string RedisTokenKey { get; set; } = "";
 
-    private Logger logger = LogManager.GetLogger("Conf");
+    private readonly Logger _logger = LogManager.GetLogger("Conf");
 
     public void InitServerConfig()
     {
         try { File.WriteAllText("server_config_example.json", JsonConvert.SerializeObject(new ServerConfig(), Formatting.Indented)); } catch { }
         if (!File.Exists("server_config.json"))
         {
-            logger.Error($"server_config.json 遺失，請依照 {Path.GetFullPath("server_config_example.json")} 內的格式填入正確的數值");
+            _logger.Error($"server_config.json 遺失，請依照 {Path.GetFullPath("server_config_example.json")} 內的格式填入正確的數值");
             if (!Console.IsInputRedirected)
                 Console.ReadKey();
             Environment.Exit(3);
@@ -34,14 +36,14 @@ public class ServerConfig
         {
             if (string.IsNullOrWhiteSpace(config.DiscordClientId))
             {
-                logger.Error("DiscordClientId 遺失，請輸入至 server_config.json 後重開伺服器");
+                _logger.Error($"{nameof(DiscordClientId)} 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
             }
             if (string.IsNullOrWhiteSpace(config.DiscordClientSecret))
             {
-                logger.Error("DiscordClientSecret 遺失，請輸入至 server_config.json 後重開伺服器");
+                _logger.Error($"{nameof(DiscordClientSecret)} 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -49,7 +51,7 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.GoogleClientId))
             {
-                logger.Error("GoogleClientId 遺失，請輸入至 server_config.json 後重開伺服器");
+                _logger.Error($"{nameof(GoogleClientId)} 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -57,15 +59,31 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.GoogleClientSecret))
             {
-                logger.Error("GoogleClientSecret 遺失，請輸入至 server_config.json 後重開伺服器");
+                _logger.Error($"{nameof(GoogleClientSecret)} 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
             }
 
-            if (string.IsNullOrWhiteSpace(config.RedirectURI))
+            if (string.IsNullOrWhiteSpace(config.TwitchClientId))
             {
-                logger.Error("RedirectURI 遺失，請輸入至 server_config.json 後重開伺服器");
+                _logger.Error($"{nameof(TwitchClientId)} 遺失，請輸入至 server_config.json 後重開伺服器");
+                if (!Console.IsInputRedirected)
+                    Console.ReadKey();
+                Environment.Exit(3);
+            }
+
+            if (string.IsNullOrWhiteSpace(config.TwitchClientSecret))
+            {
+                _logger.Error($"{nameof(TwitchClientSecret)} 遺失，請輸入至 server_config.json 後重開伺服器");
+                if (!Console.IsInputRedirected)
+                    Console.ReadKey();
+                Environment.Exit(3);
+            }
+
+            if (string.IsNullOrWhiteSpace(config.RedirectUrl))
+            {
+                _logger.Error($"{nameof(RedirectUrl)} 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -73,7 +91,7 @@ public class ServerConfig
 
             if (string.IsNullOrWhiteSpace(config.RedisOption))
             {
-                logger.Error("RedisOption 遺失，請輸入至 server_config.json 後重開伺服器");
+                _logger.Error($"{nameof(RedisOption)} 遺失，請輸入至 server_config.json 後重開伺服器");
                 if (!Console.IsInputRedirected)
                     Console.ReadKey();
                 Environment.Exit(3);
@@ -84,44 +102,46 @@ public class ServerConfig
             DiscordClientSecret = config.DiscordClientSecret;
             GoogleClientId = config.GoogleClientId;
             GoogleClientSecret = config.GoogleClientSecret;
-            RedirectURI = config.RedirectURI;
+            TwitchClientId = config.TwitchClientId;
+            TwitchClientSecret = config.TwitchClientSecret;
+            RedirectUrl = config.RedirectUrl;
             RedisOption = config.RedisOption;
             TokenKey = config.TokenKey;
             RedisTokenKey = config.RedisTokenKey;
 
             if (string.IsNullOrWhiteSpace(config.TokenKey) || string.IsNullOrWhiteSpace(TokenKey))
             {
-                logger.Error($"{nameof(TokenKey)} 遺失，將重新建立隨機亂數");
+                _logger.Error($"{nameof(TokenKey)} 遺失，將重新建立隨機亂數");
 
                 TokenKey = GenRandomKey();
 
                 try { File.WriteAllText("server_config.json", JsonConvert.SerializeObject(this, Formatting.Indented)); }
                 catch (Exception ex)
                 {
-                    logger.Error($"設定檔保存失敗: {ex}");
-                    logger.Error($"請手動將此字串填入設定檔中的 \"{nameof(TokenKey)}\" 欄位: {TokenKey}");
+                    _logger.Error($"設定檔保存失敗: {ex}");
+                    _logger.Error($"請手動將此字串填入設定檔中的 \"{nameof(TokenKey)}\" 欄位: {TokenKey}");
                     Environment.Exit(3);
                 }
             }
 
             if (string.IsNullOrWhiteSpace(config.RedisTokenKey) || string.IsNullOrWhiteSpace(RedisTokenKey))
             {
-                logger.Error($"{nameof(RedisTokenKey)} 遺失，將重新建立隨機亂數");
+                _logger.Error($"{nameof(RedisTokenKey)} 遺失，將重新建立隨機亂數");
 
                 RedisTokenKey = GenRandomKey();
 
                 try { File.WriteAllText("server_config.json", JsonConvert.SerializeObject(this, Formatting.Indented)); }
                 catch (Exception ex)
                 {
-                    logger.Error($"設定檔保存失敗: {ex}");
-                    logger.Error($"請手動將此字串填入設定檔中的 \"{nameof(RedisTokenKey)}\" 欄位: {RedisTokenKey}");
+                    _logger.Error($"設定檔保存失敗: {ex}");
+                    _logger.Error($"請手動將此字串填入設定檔中的 \"{nameof(RedisTokenKey)}\" 欄位: {RedisTokenKey}");
                     Environment.Exit(3);
                 }
             }
         }
         catch (Exception ex)
         {
-            logger.Error(ex.Message);
+            _logger.Error(ex.Message);
             throw;
         }
     }

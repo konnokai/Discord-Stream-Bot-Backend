@@ -70,7 +70,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                         new("code", code),
                         new("client_id", Utility.ServerConfig.DiscordClientId),
                         new("client_secret", Utility.ServerConfig.DiscordClientSecret),
-                        new("redirect_uri", Utility.ServerConfig.RedirectURI),
+                        new("redirect_uri", Utility.ServerConfig.RedirectUrl),
                         new("grant_type", "authorization_code")
                     });
                     content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
@@ -164,7 +164,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
                 var googleUser = await flow.LoadTokenAsync(discordUser, CancellationToken.None);
 
-                var googleToken = await flow.ExchangeCodeForTokenAsync(discordUser, code, Utility.ServerConfig.RedirectURI, CancellationToken.None);
+                var googleToken = await flow.ExchangeCodeForTokenAsync(discordUser, code, Utility.ServerConfig.RedirectUrl, CancellationToken.None);
                 if (googleToken == null)
                     return new APIResult(ResultStatusCode.Unauthorized, "請重新登入 Google 帳號");
 
