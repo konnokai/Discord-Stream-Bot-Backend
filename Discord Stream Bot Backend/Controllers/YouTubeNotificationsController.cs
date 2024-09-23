@@ -80,6 +80,9 @@ namespace Discord_Stream_Bot_Backend.Controllers
                         + "verifyToken: {verifyToken}\n"
                         + "leaseSeconds: {leaseSeconds}",
                         topic, challenge, mode, verifyToken, leaseSeconds);
+
+                    string channelId = new Regex(@"channel_id=(?'ChannelId'[\w\-\\_]{24})").Match(topic).Groups["ChannelId"].Value;
+
                     switch (mode)
                     {
                         case "subscribe":
@@ -87,7 +90,6 @@ namespace Discord_Stream_Bot_Backend.Controllers
                             {
                                 try
                                 {
-                                    string channelId = new Regex(@"channel_id=(?'ChannelId'[\w\-\\_]{24})").Match(topic).Groups["ChannelId"].Value;
                                     if (string.IsNullOrEmpty(channelId))
                                         return Content("400");
 
@@ -100,6 +102,17 @@ namespace Discord_Stream_Bot_Backend.Controllers
                                 }
                             }
                             return Content(challenge);
+                        case "unsubscribe":
+                            try
+                            {
+                                Utility.RedisDb.StringGetDelete($"youtube.pubsub.HMACSecret:{channelId}");
+                                return Content(challenge);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "UnSubscribe 錯誤");
+                                return Content("400");
+                            }
                         default:
                             _logger.LogWarning("NotificationCallback 錯誤，未知的 mode: {Mode}", mode);
                             return Content("400");
