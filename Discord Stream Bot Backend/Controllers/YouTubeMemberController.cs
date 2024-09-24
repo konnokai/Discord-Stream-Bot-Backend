@@ -62,7 +62,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                TokenData tokenData = null;
+                DiscordAccessTokenData tokenData = null;
                 try
                 {
                     var content = new FormUrlEncodedContent(new KeyValuePair<string, string>[]
@@ -78,7 +78,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
                     response.EnsureSuccessStatusCode();
 
-                    tokenData = JsonConvert.DeserializeObject<TokenData>(await response.Content.ReadAsStringAsync());
+                    tokenData = JsonConvert.DeserializeObject<DiscordAccessTokenData>(await response.Content.ReadAsStringAsync());
 
                     if (tokenData == null || tokenData.access_token == null)
                         return new APIResult(ResultStatusCode.Unauthorized, "認證錯誤，請重新登入 Discord");

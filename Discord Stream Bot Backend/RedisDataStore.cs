@@ -1,6 +1,7 @@
 ﻿using Discord_Stream_Bot_Backend.Auth;
 using Google.Apis.Util.Store;
 using Newtonsoft.Json;
+using NLog;
 using NLog.Web;
 using StackExchange.Redis;
 using System;
@@ -11,7 +12,7 @@ namespace Discord_Stream_Bot_Backend
     public class RedisDataStore : IDataStore
     {
         private readonly IDatabase _database;
-        private readonly NLog.Logger _logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+        private readonly Logger _logger = LogManager.Setup().LoadConfigurationFromAppSettings(AppContext.BaseDirectory).GetCurrentClassLogger();
 
         public RedisDataStore(ConnectionMultiplexer connectionMultiplexer)
         {

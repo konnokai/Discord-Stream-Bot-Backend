@@ -34,4 +34,13 @@
 	<PropertyGroup>
 		<SourceRevisionId>build$([System.DateTime]::UtcNow.AddHours(8).ToString("yyyy/MM/dd HH:mm:ss"))</SourceRevisionId>
 	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <Optimize>False</Optimize>
+	  <DebugType>embedded</DebugType>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <DebugType>embedded</DebugType>
+	</PropertyGroup>
 </Project>

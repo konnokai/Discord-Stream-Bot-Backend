@@ -89,11 +89,11 @@ namespace Discord_Stream_Bot_Backend.Auth
         }
 
         /// <summary>
-        /// 解密Google Token Response資料
+        /// 解密 User Token Response 資料
         /// </summary>
-        /// <param name="token">已加密的Google Token Response資料</param>
-        /// <returns>未加密的Google Token Response資料</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Token格式錯誤</exception>
+        /// <param name="token">已加密的 User Token Response 資料</param>
+        /// <returns>未加密的 User Token Response 資料</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Token 格式錯誤</exception>
         /// <exception cref="ArgumentException">簽章驗證失敗</exception>
         public static T GetTokenResponseValue<T>(string token)
         {
