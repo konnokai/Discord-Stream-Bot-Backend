@@ -189,6 +189,10 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     return null;
                 }
 
+                // 不發送 Deleted 通知，反正現在也用不到
+                if (youtubeNotification.NotificationType == YoutubePubSubNotification.YTNotificationType.Deleted)
+                    return youtubeNotification;
+
                 if (Utility.RedisSub.Publish(new RedisChannel(GetRedisChannelName(youtubeNotification.NotificationType), RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(youtubeNotification)) >= 1)
                 {
                     if (_needRePublishVideoList.Any())
