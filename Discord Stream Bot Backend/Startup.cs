@@ -26,7 +26,10 @@ namespace Discord_Stream_Bot_Backend
                 options.UseMemberCasing();
             });
 
-            var hostUri = new Uri(Utility.ServerConfig.RedirectUrl);
+            services.AddSingleton<RedisService>();
+            services.AddSingleton<Services.Auth.TokenService>();
+
+            var hostUri = new Uri(Configuration["RedirectUrl"]);
             services.AddCors(options =>
             {
                 options.AddPolicy(name: "allowGET", builder =>
@@ -46,7 +49,7 @@ namespace Discord_Stream_Bot_Backend
             services.AddTwitchLibEventSubWebhooks(config =>
             {
                 config.CallbackPath = "/TwitchWebHooks";
-                config.Secret = Utility.TwitchWebHookSecret;
+                config.Secret = Configuration["Twitch:WebHookSecret"];
                 config.EnableLogging = false;
             });
 

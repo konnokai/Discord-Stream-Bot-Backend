@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 
-namespace Discord_Stream_Bot_Backend.Auth
+namespace Discord_Stream_Bot_Backend.Services.Auth
 {
     // https://blog.miniasp.com/post/2008/05/13/Random-vs-RNGCryptoServiceProvider
     // https://learn.microsoft.com/zh-tw/dotnet/api/system.security.cryptography.randomnumbergenerator?view=net-7.0

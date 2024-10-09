@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Discord_Stream_Bot_Backend.Auth
+namespace Discord_Stream_Bot_Backend.Services.Auth
 {
     public class TokenCrypto
     {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Discord_Stream_Bot_Backend.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Routing;
 using Newtonsoft.Json;
@@ -13,11 +14,13 @@ namespace Discord_Stream_Bot_Backend.Middleware
     public class LogMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly RedisService _redisService;
         private Logger logger = LogManager.GetLogger("ACCE");
 
-        public LogMiddleware(RequestDelegate next)
+        public LogMiddleware(RequestDelegate next, RedisService redisService)
         {
             _next = next;
+            _redisService = redisService;
         }
 
         public async Task Invoke(HttpContext context)
@@ -36,11 +39,11 @@ namespace Discord_Stream_Bot_Backend.Middleware
                 {
                     if (!context.Request.Headers.TryGetValue("Content-Type", out var contentType) || contentType != "application/atom+xml")
                     {
-                        var badCount = await Utility.RedisDb.StringGetAsync(badReqRedisKey);
+                        var badCount = await _redisService.RedisDb.StringGetAsync(badReqRedisKey);
                         if (badCount.HasValue && int.Parse(badCount.ToString()) >= 5)
                         {
-                            await Utility.RedisDb.StringIncrementAsync(badReqRedisKey);
-                            await Utility.RedisDb.KeyExpireAsync(badReqRedisKey, TimeSpan.FromHours(1));
+                            await _redisService.RedisDb.StringIncrementAsync(badReqRedisKey);
+                            await _redisService.RedisDb.KeyExpireAsync(badReqRedisKey, TimeSpan.FromHours(1));
                             var errorMessage = JsonConvert.SerializeObject(new
                             {
                                 ErrorMessage = "429 Too Many Requests"
@@ -55,11 +58,11 @@ namespace Discord_Stream_Bot_Backend.Middleware
                     }
                     if (requestUrl.ToLower().Contains("randomvideo"))
                     {
-                        var rngReqCount = await Utility.RedisDb.StringGetAsync(rngReqRedisKey);
+                        var rngReqCount = await _redisService.RedisDb.StringGetAsync(rngReqRedisKey);
                         if (rngReqCount.HasValue && int.Parse(rngReqCount.ToString()) >= 5)
                         {
-                            await Utility.RedisDb.StringIncrementAsync(rngReqRedisKey);
-                            await Utility.RedisDb.KeyExpireAsync(rngReqRedisKey, TimeSpan.FromHours(1));
+                            await _redisService.RedisDb.StringIncrementAsync(rngReqRedisKey);
+                            await _redisService.RedisDb.KeyExpireAsync(rngReqRedisKey, TimeSpan.FromHours(1));
                             var errorMessage = JsonConvert.SerializeObject(new
                             {
                                 ErrorMessage = "429 Too Many Requests"
@@ -96,13 +99,13 @@ namespace Discord_Stream_Bot_Backend.Middleware
                 {
                     if (context.Response.StatusCode >= 400 && context.Response.StatusCode < 500)
                     {
-                        await Utility.RedisDb.StringIncrementAsync(badReqRedisKey);
-                        await Utility.RedisDb.KeyExpireAsync(badReqRedisKey, TimeSpan.FromHours(1));
+                        await _redisService.RedisDb.StringIncrementAsync(badReqRedisKey);
+                        await _redisService.RedisDb.KeyExpireAsync(badReqRedisKey, TimeSpan.FromHours(1));
                     }
                     if (requestUrl.ToLower().Contains("randomvideo"))
                     {
-                        await Utility.RedisDb.StringIncrementAsync(rngReqRedisKey);
-                        await Utility.RedisDb.KeyExpireAsync(rngReqRedisKey, TimeSpan.FromHours(1));
+                        await _redisService.RedisDb.StringIncrementAsync(rngReqRedisKey);
+                        await _redisService.RedisDb.KeyExpireAsync(rngReqRedisKey, TimeSpan.FromHours(1));
                     }
                 }
             }

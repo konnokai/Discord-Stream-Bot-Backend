@@ -1,33 +1,17 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
-using NLog;
-using StackExchange.Redis;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading;
 
 namespace Discord_Stream_Bot_Backend
 {
     public static class Utility
     {
-        public static List<string> NowRecordList { get; private set; } = new List<string>();
-        public static ConnectionMultiplexer Redis { get; set; }
-        public static ISubscriber RedisSub { get; set; }
-        public static IDatabase RedisDb { get; set; }
-        public static ServerConfig ServerConfig { get; set; } = new ServerConfig();
         public static string TwitchWebHookSecret { get; set; }
 
         private const string UnReservedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~";
-        private static readonly Logger logger;
-
-        static Utility()
-        {
-            _ = new Timer((obj) => RefreshNowRecordList(), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(20));
-            logger = LogManager.GetLogger("Utility");
-        }
 
         /// <summary>
         /// Url Encoding
@@ -77,26 +61,6 @@ namespace Discord_Stream_Bot_Backend
             }
 
             return context.Connection.RemoteIpAddress;
-        }
-
-        private static void RefreshNowRecordList()
-        {
-            try
-            {
-                var newNowRecordList = Redis.GetDatabase(0).SetMembers("youtube.nowRecord").Select((x) => x.ToString()).ToList();
-                if (newNowRecordList.Any())
-                {
-                    NowRecordList.Clear();
-                    NowRecordList.AddRange(newNowRecordList);
-                }
-
-                logger.Info($"重整現正直播的清單: {NowRecordList.Count}個直播");
-            }
-            catch (Exception ex)
-            {
-                logger.Error(ex, "現正直播清單重整失敗");
-                NowRecordList = new List<string>();
-            }
         }
     }
 

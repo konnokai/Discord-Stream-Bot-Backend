@@ -14,11 +14,13 @@ namespace Discord_Stream_Bot_Backend.Services
     {
         private readonly ILogger<EventSubHostedService> _logger;
         private readonly IEventSubWebhooks _eventSubWebhooks;
+        private readonly RedisService _redisService;
 
-        public EventSubHostedService(ILogger<EventSubHostedService> logger, IEventSubWebhooks eventSubWebhooks)
+        public EventSubHostedService(ILogger<EventSubHostedService> logger, IEventSubWebhooks eventSubWebhooks, RedisService redisService)
         {
             _logger = logger;
             _eventSubWebhooks = eventSubWebhooks;
+            _redisService = redisService;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -45,7 +47,7 @@ namespace Discord_Stream_Bot_Backend.Services
         private void _eventSubWebhooks_OnStreamOffline(object sender, TwitchLib.EventSub.Webhooks.Core.EventArgs.Stream.StreamOfflineArgs e)
         {
             _logger.LogInformation("Twitch 直播已離線: {UserName} ({UserId})", e.Notification.Event.BroadcasterUserName, e.Notification.Event.BroadcasterUserId);
-            Utility.RedisSub.Publish(new("twitch:stream_offline", StackExchange.Redis.RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(e.Notification.Event));
+            _redisService.AddPubMessage("twitch:stream_offline", JsonConvert.SerializeObject(e.Notification.Event));
         }
 
         private void _eventSubWebhooks_OnChannelUpdate(object sender, ChannelUpdateArgs e)
@@ -55,7 +57,7 @@ namespace Discord_Stream_Bot_Backend.Services
                 e.Notification.Event.Title,
                 e.Notification.Event.CategoryName);
 
-            Utility.RedisSub.Publish(new("twitch:channel_update", StackExchange.Redis.RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(e.Notification.Event));
+            _redisService.AddPubMessage("twitch:channel_update", JsonConvert.SerializeObject(e.Notification.Event));
         }
     }
 }

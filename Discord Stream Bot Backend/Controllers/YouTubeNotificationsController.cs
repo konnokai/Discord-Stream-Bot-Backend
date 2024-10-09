@@ -1,12 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Discord_Stream_Bot_Backend.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using StackExchange.Redis;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -20,10 +17,12 @@ namespace Discord_Stream_Bot_Backend.Controllers
     public class YouTubeNotificationsController : ControllerBase
     {
         private readonly ILogger<YouTubeNotificationsController> _logger;
-        private readonly ConcurrentDictionary<YoutubePubSubNotification.YTNotificationType, List<YoutubePubSubNotification>> _needRePublishVideoList = new();
-        public YouTubeNotificationsController(ILogger<YouTubeNotificationsController> logger)
+        private readonly RedisService _redisService;
+
+        public YouTubeNotificationsController(ILogger<YouTubeNotificationsController> logger, RedisService redisService)
         {
             _logger = logger;
+            _redisService = redisService;
         }
 
         [HttpGet]
@@ -93,7 +92,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                                     if (string.IsNullOrEmpty(channelId))
                                         return Content("400");
 
-                                    Utility.RedisDb.StringSet($"youtube.pubsub.HMACSecret:{channelId}", verifyToken, TimeSpan.FromSeconds(int.Parse(leaseSeconds)));
+                                    _redisService.RedisDb.StringSet($"youtube.pubsub.HMACSecret:{channelId}", verifyToken, TimeSpan.FromSeconds(int.Parse(leaseSeconds)));
                                 }
                                 catch (Exception ex)
                                 {
@@ -105,7 +104,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                         case "unsubscribe":
                             try
                             {
-                                Utility.RedisDb.StringGetDelete($"youtube.pubsub.HMACSecret:{channelId}");
+                                _redisService.RedisDb.StringGetDelete($"youtube.pubsub.HMACSecret:{channelId}");
                                 return Content(challenge);
                             }
                             catch (Exception ex)
@@ -173,61 +172,24 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     return null;
                 }
 
-                if (!Utility.RedisDb.KeyExists($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}"))
+                if (!_redisService.RedisDb.KeyExists($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}"))
                 {
                     _logger.LogWarning("Redis 無 {YoutubeChannelId} 的 HMACSecret 值", youtubeNotification.ChannelId);
-                    Utility.RedisSub.Publish(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), youtubeNotification.ChannelId);
+                    _redisService.AddPubMessage("youtube.pubsub.NeedRegister", youtubeNotification.ChannelId);
                     return null;
                 }
 
-                string HMACsecret = Utility.RedisDb.StringGet($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}");
+                string HMACsecret = _redisService.RedisDb.StringGet($"youtube.pubsub.HMACSecret:{youtubeNotification.ChannelId}");
                 string HMACSHA1 = ConvertToHexadecimal(SignWithHmac(xmlText, HMACsecret));
                 if (HMACSHA1 != signature)
                 {
                     _logger.LogWarning("HMACSHA1 比對失敗: {HMACSHA1} vs {Signature}", HMACSHA1, signature);
-                    Utility.RedisSub.Publish(new RedisChannel("youtube.pubsub.NeedRegister", RedisChannel.PatternMode.Literal), youtubeNotification.ChannelId);
+                    _redisService.AddPubMessage("youtube.pubsub.NeedRegister", youtubeNotification.ChannelId);
                     return null;
                 }
 
-                // 不發送 Deleted 通知，反正現在也用不到
-                if (youtubeNotification.NotificationType == YoutubePubSubNotification.YTNotificationType.Deleted)
-                    return youtubeNotification;
-
-                if (Utility.RedisSub.Publish(new RedisChannel(GetRedisChannelName(youtubeNotification.NotificationType), RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(youtubeNotification)) >= 1)
-                {
-                    if (_needRePublishVideoList.Any())
-                    {
-                        _logger.LogWarning("已可重新發送通知訊息");
-
-                        foreach (var item in _needRePublishVideoList)
-                        {
-                            foreach (var video in item.Value)
-                            {
-                                _logger.LogInformation("重新發送通知訊息: {VideoId}", video.VideoId);
-                                Utility.RedisSub.Publish(new RedisChannel(GetRedisChannelName(video.NotificationType), RedisChannel.PatternMode.Literal), JsonConvert.SerializeObject(video), CommandFlags.FireAndForget);
-                            }
-                        }
-
-                        _logger.LogInformation("已重新發送全部通知訊息");
-                        _needRePublishVideoList.Clear();
-                    }
-                }
-                else
-                {
-                    _needRePublishVideoList.AddOrUpdate(youtubeNotification.NotificationType,
-                        new List<YoutubePubSubNotification>() { youtubeNotification },
-                        (type, list) =>
-                        {
-                            if (!list.Any((x) => x.VideoId == youtubeNotification.VideoId))
-                            {
-                                list.Add(youtubeNotification);
-                            }
-
-                            return list;
-                        });
-
-                    _logger.LogWarning("通知訊息發送失敗，儲存到清單待命: {VideoId}", youtubeNotification.VideoId);
-                }
+                if (youtubeNotification.NotificationType == YoutubePubSubNotification.YTNotificationType.CreateOrUpdated)
+                    _redisService.AddYouTubePubMessage(youtubeNotification);
 
                 return youtubeNotification;
             }
@@ -238,8 +200,6 @@ namespace Discord_Stream_Bot_Backend.Controllers
             }
         }
 
-        private static string GetRedisChannelName(YoutubePubSubNotification.YTNotificationType notificationType)
-            => notificationType == YoutubePubSubNotification.YTNotificationType.CreateOrUpdated ? "youtube.pubsub.CreateOrUpdate" : "youtube.pubsub.Deleted";
 
         //https://stackoverflow.com/questions/4390543/facebook-real-time-update-validating-x-hub-signature-sha1-signature-in-c-sharp
         private static byte[] SignWithHmac(string dataToSign, string keyBody)

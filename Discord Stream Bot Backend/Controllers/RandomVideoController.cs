@@ -1,7 +1,8 @@
-﻿using Discord_Stream_Bot_Backend.Auth;
+﻿using Discord_Stream_Bot_Backend.Services;
+using Discord_Stream_Bot_Backend.Services.Auth;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using NLog;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,19 +14,28 @@ namespace Discord_Stream_Bot_Backend.Controllers
     [ApiController]
     public class RandomVideoController : Controller
     {
-        readonly Logger logger = LogManager.GetLogger("RngVideo");
+        private readonly ILogger<RandomVideoController> _logger;
+        private readonly RedisService _redisService;
+
+        public RandomVideoController(ILogger<RandomVideoController> logger, RedisService redisService)
+        {
+            _logger = logger;
+            _redisService = redisService;
+        }
 
         [EnableCors("allowGET")]
         [HttpGet]
         public async Task<RedirectResult> RandomVideo()
         {
+            _redisService.AddPubMessage("test:channel", "test");
+
             try
             {
-                await Utility.RedisDb.StringIncrementAsync("discord_stream_bot:randomVideoClickCount");
+                await _redisService.RedisDb.StringIncrementAsync("discord_stream_bot:randomVideoClickCount");
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "Redis Increment Error\n");
+                _logger.LogError(ex, "Redis Increment Error");
             }
 
             try
@@ -48,20 +58,20 @@ namespace Discord_Stream_Bot_Backend.Controllers
                         randomVideoUrlList.AddRange(strings.Where((x) => !string.IsNullOrWhiteSpace(x)).Select((x) => x.Trim()));
                 }
 
-                if (Utility.NowRecordList.Any())
-                    randomVideoUrlList.AddRange(Utility.NowRecordList.Select((x) => $"https://www.youtube.com/watch?v={x}"));
+                if (_redisService.NowRecordList.Any())
+                    randomVideoUrlList.AddRange(_redisService.NowRecordList.Select((x) => $"https://www.youtube.com/watch?v={x}"));
 
                 var index = RNG.Next(randomVideoUrlList.Count);
-                logger.Info($"randomVideoUrlList.Count: {randomVideoUrlList.Count}, RNG.Next: {index}");
+                _logger.LogInformation("randomVideoUrlList.Count: {randomVideoUrlList.Count}, RNG.Next: {index}", randomVideoUrlList.Count, index);
 
                 string randomUrl = randomVideoUrlList[Math.Max(0, Math.Min(randomVideoUrlList.Count - 1, index))];
-                logger.Info(randomUrl);
+                _logger.LogInformation(randomUrl);
 
                 return Redirect(randomUrl);
             }
             catch (Exception ex)
             {
-                logger.Error(ex, "RandomVideo\n");
+                _logger.LogError(ex, "RandomVideo");
                 return Redirect("https://dcbot.konnokai.me/stream");
             }
         }

@@ -1,7 +1,9 @@
-﻿using Discord_Stream_Bot_Backend.Auth;
-using Discord_Stream_Bot_Backend.Model.Twitch;
+﻿using Discord_Stream_Bot_Backend.Model.Twitch;
+using Discord_Stream_Bot_Backend.Services;
+using Discord_Stream_Bot_Backend.Services.Auth;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System;
@@ -18,17 +20,26 @@ namespace Discord_Stream_Bot_Backend.Controllers
     public class TwitchOAuthController : Controller
     {
         private readonly ILogger<YouTubeMemberController> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly RedisService _redisService;
+        private readonly TokenService _tokenService;
         private readonly TwitchLib.Api.TwitchAPI _twitchAPI;
 
-        public TwitchOAuthController(ILogger<YouTubeMemberController> logger)
+        public TwitchOAuthController(ILogger<YouTubeMemberController> logger,
+            IConfiguration configuration,
+            RedisService redisService,
+            TokenService tokenService)
         {
             _logger = logger;
+            _configuration = configuration;
+            _redisService = redisService;
+            _tokenService = tokenService;
             _twitchAPI = new TwitchLib.Api.TwitchAPI()
             {
                 Settings =
                 {
-                     ClientId = Utility.ServerConfig.TwitchClientId,
-                     Secret = Utility.ServerConfig.TwitchClientSecret,
+                     ClientId = _configuration["Twitch:ClientId"],
+                     Secret = _configuration["Twitch:ClientSecret"]
                 }
             };
         }
@@ -37,7 +48,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
         [HttpGet]
         public APIResult GetTwitchOAuthUrl(string state)
         {
-            var url = _twitchAPI.Auth.GetAuthorizationCodeUrl(Utility.ServerConfig.RedirectUrl,
+            var url = _twitchAPI.Auth.GetAuthorizationCodeUrl(_configuration["RedirectUrl"],
                 new List<AuthScopes>() { AuthScopes.Helix_Moderation_Read, AuthScopes.Helix_User_Read_Subscriptions },
                 true,
                 state);
@@ -52,10 +63,10 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                if (await Utility.RedisDb.KeyExistsAsync($"twitch:code:{code}"))
+                if (await _redisService.RedisDb.KeyExistsAsync($"twitch:code:{code}"))
                     return new APIResult(ResultStatusCode.BadRequest, "請確認是否有插件或軟體導致重複驗證\n如網頁正常顯示資料則無需理會");
 
-                await Utility.RedisDb.StringSetAsync($"twitch:code:{code}", "0", TimeSpan.FromHours(1));
+                await _redisService.RedisDb.StringSetAsync($"twitch:code:{code}", "0", TimeSpan.FromHours(1));
             }
             catch (Exception ex)
             {
@@ -65,11 +76,11 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                var discordUser = TokenManager.GetUser<string>(state);
+                var discordUser = _tokenService.GetUser<string>(state);
                 if (string.IsNullOrEmpty(discordUser))
                     return new APIResult(ResultStatusCode.Unauthorized, "Token 無效，請重新登入 Discord");
 
-                var authCodeResponse = await _twitchAPI.Auth.GetAccessTokenFromCodeAsync(code, Utility.ServerConfig.TwitchClientSecret, Utility.ServerConfig.RedirectUrl);
+                var authCodeResponse = await _twitchAPI.Auth.GetAccessTokenFromCodeAsync(code, _configuration["Twitch:ClientSecret"], _configuration["RedirectUrl"]);
                 if (authCodeResponse == null)
                     return new APIResult(ResultStatusCode.Unauthorized, "請重新登入 Twitch 帳號");
 
@@ -87,8 +98,8 @@ namespace Discord_Stream_Bot_Backend.Controllers
                         TokenType = authCodeResponse.TokenType,
                     };
 
-                    var encValue = TokenManager.CreateTokenResponseToken(twitchAccessTokenData);
-                    await Utility.RedisDb.StringSetAsync(new($"twitch:oauth:{discordUser}"), encValue);
+                    var encValue = _tokenService.CreateTokenResponseToken(twitchAccessTokenData);
+                    await _redisService.RedisDb.StringSetAsync(new($"twitch:oauth:{discordUser}"), encValue);
                     return new APIResult(ResultStatusCode.OK);
                 }
                 else
@@ -120,15 +131,15 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                var discordUser = TokenManager.GetUser<string>(token);
+                var discordUser = _tokenService.GetUser<string>(token);
                 if (string.IsNullOrEmpty(discordUser))
                     return new APIResult(ResultStatusCode.Unauthorized, "Token 無效");
 
-                var twitchTokenEnc = await Utility.RedisDb.StringGetAsync(new RedisKey($"twitch:oauth:{discordUser}"));
+                var twitchTokenEnc = await _redisService.RedisDb.StringGetAsync(new RedisKey($"twitch:oauth:{discordUser}"));
                 if (!twitchTokenEnc.HasValue)
                     return new APIResult(ResultStatusCode.Unauthorized, "請登入 Twitch 帳號");
 
-                var twitchToken = TokenManager.GetTokenResponseValue<TwitchAccessTokenData>(twitchTokenEnc);
+                var twitchToken = _tokenService.GetTokenResponseValue<TwitchAccessTokenData>(twitchTokenEnc);
                 if (string.IsNullOrEmpty(twitchToken.AccessToken))
                     return new APIResult(ResultStatusCode.Unauthorized, "Twitch 授權驗證無效\n請解除應用程式授權後再登入 Twitch 帳號");
 
@@ -139,15 +150,15 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 {
                     if (await _twitchAPI.Auth.ValidateAccessTokenAsync(twitchToken.AccessToken) == null)
                     {
-                        var refreshResponse = await _twitchAPI.Auth.RefreshAuthTokenAsync(twitchToken.RefreshToken, Utility.ServerConfig.TwitchClientSecret);
+                        var refreshResponse = await _twitchAPI.Auth.RefreshAuthTokenAsync(twitchToken.RefreshToken, _configuration["Twitch:ClientSecret"]);
 
                         twitchToken.AccessToken = refreshResponse.AccessToken;
                         twitchToken.RefreshToken = refreshResponse.RefreshToken;
                         twitchToken.ExpiresIn = refreshResponse.ExpiresIn;
                         twitchToken.Scopes = refreshResponse.Scopes;
 
-                        var encValue = TokenManager.CreateTokenResponseToken(refreshResponse);
-                        await Utility.RedisDb.StringSetAsync(new($"twitch:oauth:{discordUser}"), encValue);
+                        var encValue = _tokenService.CreateTokenResponseToken(refreshResponse);
+                        await _redisService.RedisDb.StringSetAsync(new($"twitch:oauth:{discordUser}"), encValue);
                     }
                 }
                 catch (Exception ex)

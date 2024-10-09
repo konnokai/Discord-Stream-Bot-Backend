@@ -1,8 +1,11 @@
 ﻿using Discord_Stream_Bot_Backend.Model;
+using Discord_Stream_Bot_Backend.Services;
+using Discord_Stream_Bot_Backend.Services.Auth;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -23,20 +26,31 @@ namespace Discord_Stream_Bot_Backend.Controllers
         private readonly ILogger<YouTubeMemberController> _logger;
         private readonly HttpClient _httpClient;
         private readonly GoogleAuthorizationCodeFlow flow;
+        private readonly IConfiguration _configuration;
+        private readonly RedisService _redisService;
+        private readonly TokenService _tokenService;
 
-        public YouTubeMemberController(ILogger<YouTubeMemberController> logger, HttpClient httpClient)
+        public YouTubeMemberController(ILogger<YouTubeMemberController> logger,
+            HttpClient httpClient,
+            IConfiguration configuration,
+            RedisService redisService,
+            TokenService tokenService)
         {
             _logger = logger;
             _httpClient = httpClient;
+            _configuration = configuration;
+            _redisService = redisService;
+            _tokenService = tokenService;
+
             flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
                 ClientSecrets = new ClientSecrets
                 {
-                    ClientId = Utility.ServerConfig.GoogleClientId,
-                    ClientSecret = Utility.ServerConfig.GoogleClientSecret
+                    ClientId = _configuration["Google:ClientId"],
+                    ClientSecret = _configuration["Google:ClientSecret"]
                 },
                 Scopes = new string[] { "https://www.googleapis.com/auth/youtube.force-ssl" },
-                DataStore = new RedisDataStore(RedisConnection.Instance.ConnectionMultiplexer)
+                DataStore = new RedisDataStore(_redisService, _tokenService)
             });
         }
 
@@ -49,10 +63,10 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                if (await Utility.RedisDb.KeyExistsAsync($"discord:code:{code}"))
+                if (await _redisService.RedisDb.KeyExistsAsync($"discord:code:{code}"))
                     return new APIResult(ResultStatusCode.BadRequest, "請確認是否有插件或軟體導致重複驗證\n如網頁正常顯示資料則無需理會");
 
-                await Utility.RedisDb.StringSetAsync($"discord:code:{code}", "0", TimeSpan.FromHours(1));
+                await _redisService.RedisDb.StringSetAsync($"discord:code:{code}", "0", TimeSpan.FromHours(1));
             }
             catch (Exception ex)
             {
@@ -68,9 +82,9 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     var content = new FormUrlEncodedContent(new KeyValuePair<string, string>[]
                     {
                         new("code", code),
-                        new("client_id", Utility.ServerConfig.DiscordClientId),
-                        new("client_secret", Utility.ServerConfig.DiscordClientSecret),
-                        new("redirect_uri", Utility.ServerConfig.RedirectUrl),
+                        new("client_id",  _configuration["Discord:ClientId"]),
+                        new("client_secret", _configuration["Discord:ClientSecret"]),
+                        new("redirect_uri",  _configuration["RedirectUrl"]),
                         new("grant_type", "authorization_code")
                     });
                     content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
@@ -118,7 +132,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 string token = "";
                 try
                 {
-                    token = Auth.TokenManager.CreateToken(discordUser.id);
+                    token = _tokenService.CreateToken(discordUser.id);
                 }
                 catch (Exception ex)
                 {
@@ -145,10 +159,10 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                if (await Utility.RedisDb.KeyExistsAsync($"google:code:{code}"))
+                if (await _redisService.RedisDb.KeyExistsAsync($"google:code:{code}"))
                     return new APIResult(ResultStatusCode.BadRequest, "請確認是否有插件或軟體導致重複驗證\n如網頁正常顯示資料則無需理會");
 
-                await Utility.RedisDb.StringSetAsync($"google:code:{code}", "0", TimeSpan.FromHours(1));
+                await _redisService.RedisDb.StringSetAsync($"google:code:{code}", "0", TimeSpan.FromHours(1));
             }
             catch (Exception ex)
             {
@@ -158,13 +172,13 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                var discordUser = Auth.TokenManager.GetUser<string>(state);
+                var discordUser = _tokenService.GetUser<string>(state);
                 if (string.IsNullOrEmpty(discordUser))
                     return new APIResult(ResultStatusCode.Unauthorized, "Token 無效，請重新登入 Discord");
 
                 var googleUser = await flow.LoadTokenAsync(discordUser, CancellationToken.None);
 
-                var googleToken = await flow.ExchangeCodeForTokenAsync(discordUser, code, Utility.ServerConfig.RedirectUrl, CancellationToken.None);
+                var googleToken = await flow.ExchangeCodeForTokenAsync(discordUser, code, _configuration["RedirectUrl"], CancellationToken.None);
                 if (googleToken == null)
                     return new APIResult(ResultStatusCode.Unauthorized, "請重新登入 Google 帳號");
 
@@ -210,7 +224,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                var discordUser = Auth.TokenManager.GetUser<string>(token);
+                var discordUser = _tokenService.GetUser<string>(token);
                 if (string.IsNullOrEmpty(discordUser))
                     return new APIResult(ResultStatusCode.Unauthorized, "Token 無效");
 
@@ -303,7 +317,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
             if (string.IsNullOrEmpty(token))
                 return new APIResult(ResultStatusCode.BadRequest, "Token 不可為空");
 
-            var discordUser = Auth.TokenManager.GetUser<string>(token);
+            var discordUser = _tokenService.GetUser<string>(token);
             if (string.IsNullOrEmpty(discordUser))
                 return new APIResult(ResultStatusCode.Unauthorized, "Token 無效，請重新登入 Discord");
 
@@ -317,7 +331,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
             try
             {
-                await Utility.RedisSub.PublishAsync(new StackExchange.Redis.RedisChannel("member.revokeToken", StackExchange.Redis.RedisChannel.PatternMode.Literal), discordUser);
+                _redisService.AddPubMessage("member.revokeToken", discordUser);
 
                 var googleToken = await flow.LoadTokenAsync(discordUser, CancellationToken.None);
                 if (googleToken == null)

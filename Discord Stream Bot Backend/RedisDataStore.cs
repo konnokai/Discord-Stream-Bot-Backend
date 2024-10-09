@@ -1,9 +1,9 @@
-﻿using Discord_Stream_Bot_Backend.Auth;
+﻿using Discord_Stream_Bot_Backend.Services;
+using Discord_Stream_Bot_Backend.Services.Auth;
 using Google.Apis.Util.Store;
 using Newtonsoft.Json;
 using NLog;
 using NLog.Web;
-using StackExchange.Redis;
 using System;
 using System.Threading.Tasks;
 
@@ -11,12 +11,14 @@ namespace Discord_Stream_Bot_Backend
 {
     public class RedisDataStore : IDataStore
     {
-        private readonly IDatabase _database;
+        private readonly RedisService _redisService;
+        private readonly TokenService _tokenService;
         private readonly Logger _logger = LogManager.Setup().LoadConfigurationFromAppSettings(AppContext.BaseDirectory).GetCurrentClassLogger();
 
-        public RedisDataStore(ConnectionMultiplexer connectionMultiplexer)
+        public RedisDataStore(RedisService redisService, TokenService tokenService)
         {
-            _database = connectionMultiplexer.GetDatabase(1);
+            _redisService = redisService;
+            _tokenService = tokenService;
         }
 
         public Task ClearAsync()
@@ -26,19 +28,19 @@ namespace Discord_Stream_Bot_Backend
 
         public async Task DeleteAsync<T>(string key)
         {
-            await _database.KeyDeleteAsync(GenerateStoredKey(key, typeof(T)));
+            await _redisService.RedisDb.KeyDeleteAsync(GenerateStoredKey(key, typeof(T)));
         }
 
         public async Task<T> GetAsync<T>(string key)
         {
-            if (!await _database.KeyExistsAsync(GenerateStoredKey(key, typeof(T))))
+            if (!await _redisService.RedisDb.KeyExistsAsync(GenerateStoredKey(key, typeof(T))))
                 return default(T);
 
-            var str = (await _database.StringGetAsync(GenerateStoredKey(key, typeof(T)))).ToString();
+            var str = (await _redisService.RedisDb.StringGetAsync(GenerateStoredKey(key, typeof(T)))).ToString();
 
             try
             {
-                return TokenManager.GetTokenResponseValue<T>(str);
+                return _tokenService.GetTokenResponseValue<T>(str);
             }
             catch (Exception ex)
             {
@@ -58,13 +60,13 @@ namespace Discord_Stream_Bot_Backend
 
         public async Task StoreAsync<T>(string key, T value)
         {
-            var encValue = TokenManager.CreateTokenResponseToken(value);
-            await _database.StringSetAsync(GenerateStoredKey(key, typeof(T)), encValue);
+            var encValue = _tokenService.CreateTokenResponseToken(value);
+            await _redisService.RedisDb.StringSetAsync(GenerateStoredKey(key, typeof(T)), encValue);
         }
 
         public async Task<bool> IsExistUserTokenAsync<T>(string key)
         {
-            return await _database.KeyExistsAsync(GenerateStoredKey(key, typeof(T)));
+            return await _redisService.RedisDb.KeyExistsAsync(GenerateStoredKey(key, typeof(T)));
         }
 
         public static string GenerateStoredKey(string key, Type t)

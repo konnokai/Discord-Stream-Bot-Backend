@@ -3,6 +3,7 @@ using Discord.Webhook;
 using Discord_Stream_Bot_Backend.Model;
 using Discord_Stream_Bot_Backend.Model.BiliBili;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -19,10 +20,12 @@ namespace Discord_Stream_Bot_Backend.Controllers
     {
         private readonly ILogger<BililiveRecorderWebHookController> _logger;
         private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
 
-        public BililiveRecorderWebHookController(ILogger<BililiveRecorderWebHookController> logger, HttpClient httpClient)
+        public BililiveRecorderWebHookController(ILogger<BililiveRecorderWebHookController> logger, IConfiguration configuration, HttpClient httpClient)
         {
             _logger = logger;
+            _configuration = configuration;
             _httpClient = httpClient;
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36");
         }
@@ -60,7 +63,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
 
         private async Task SendMessageToDiscordAsync(BililiveRecorderWebHookEventData eventData)
         {
-            if (string.IsNullOrEmpty(Utility.ServerConfig.BililiveWebHookUrl))
+            if (string.IsNullOrEmpty(_configuration["BililiveWebHookUrl"]))
                 return;
 
             try
@@ -91,7 +94,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                     _logger.LogError(ex, "Get Bililive Info 失敗");
                 }
 
-                var discordWebhookClient = new DiscordWebhookClient(Utility.ServerConfig.BililiveWebHookUrl);
+                var discordWebhookClient = new DiscordWebhookClient(_configuration["BililiveWebHookUrl"]);
                 await discordWebhookClient.SendMessageAsync(embeds: new List<Embed>() { embedBuilder.Build() });
             }
             catch (Exception ex)
