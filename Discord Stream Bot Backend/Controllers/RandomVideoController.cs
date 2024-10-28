@@ -27,8 +27,6 @@ namespace Discord_Stream_Bot_Backend.Controllers
         [HttpGet]
         public async Task<RedirectResult> RandomVideo()
         {
-            _redisService.AddPubMessage("test:channel", "test");
-
             try
             {
                 await _redisService.RedisDb.StringIncrementAsync("discord_stream_bot:randomVideoClickCount");
