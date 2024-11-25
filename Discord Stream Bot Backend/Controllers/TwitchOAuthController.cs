@@ -19,13 +19,13 @@ namespace Discord_Stream_Bot_Backend.Controllers
     [ApiController]
     public class TwitchOAuthController : Controller
     {
-        private readonly ILogger<YouTubeMemberController> _logger;
+        private readonly ILogger<TwitchOAuthController> _logger;
         private readonly IConfiguration _configuration;
         private readonly RedisService _redisService;
         private readonly TokenService _tokenService;
         private readonly TwitchLib.Api.TwitchAPI _twitchAPI;
 
-        public TwitchOAuthController(ILogger<YouTubeMemberController> logger,
+        public TwitchOAuthController(ILogger<TwitchOAuthController> logger,
             IConfiguration configuration,
             RedisService redisService,
             TokenService tokenService)
