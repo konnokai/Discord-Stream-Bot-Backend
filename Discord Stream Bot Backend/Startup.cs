@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using TwitchLib.EventSub.Webhooks.Extensions;
 
 namespace Discord_Stream_Bot_Backend
@@ -27,24 +26,6 @@ namespace Discord_Stream_Bot_Backend
             });
 
             services.AddSingleton<RedisService>();
-            services.AddSingleton<Services.Auth.TokenService>();
-
-            var hostUri = new Uri(Configuration["RedirectUrl"]);
-            services.AddCors(options =>
-            {
-                options.AddPolicy(name: "allowGET", builder =>
-                {
-                    builder.WithOrigins($"{hostUri.Scheme}://{hostUri.Authority}")
-                           .WithMethods("GET")
-                           .WithHeaders("Content-Type");
-                });
-                options.AddPolicy(name: "allowPOST", builder =>
-                {
-                    builder.WithOrigins($"{hostUri.Scheme}://{hostUri.Authority}")
-                           .WithMethods("POST")
-                           .WithHeaders("Content-Type");
-                });
-            });
 
             services.AddTwitchLibEventSubWebhooks(config =>
             {
