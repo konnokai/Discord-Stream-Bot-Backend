@@ -16,7 +16,7 @@ namespace Discord_Stream_Bot_Backend
         public static void Main(string[] args)
         {
 #if DEBUG
-            Console.WriteLine("Waiting for debugger to attach");
+            Console.WriteLine($"Waiting for debugger to attach, PID: {Process.GetCurrentProcess().Id}");
             while (!Debugger.IsAttached)
             {
                 Thread.Sleep(100);
