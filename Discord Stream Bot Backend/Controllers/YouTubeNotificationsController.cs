@@ -38,7 +38,7 @@ namespace Discord_Stream_Bot_Backend.Controllers
                 if (!Request.Headers.TryGetValue("User-Agent", out var userAgent) || !userAgent.ToString().StartsWith("FeedFetcher-Google;"))
                 {
                     _logger.LogWarning("無 User-Agent 或標頭無效，略過處理");
-                    return Content("400");
+                    return new ContentResult { StatusCode = 400 };
                 }
 
                 if (Request.Method == "POST")
@@ -48,26 +48,26 @@ namespace Discord_Stream_Bot_Backend.Controllers
                         if (!Request.Headers.TryGetValue("X-Hub-Signature", out var signature) || !signature.ToString().Contains('='))
                         {
                             _logger.LogWarning("無 X-Hub-Signature 或標頭無效，略過處理");
-                            return Content("400");
+                            return new ContentResult { StatusCode = 400 };
                         }
 
                         if (!Request.Headers.TryGetValue("Content-Type", out var contentType) || contentType != "application/atom+xml")
                         {
                             _logger.LogWarning("無 Content-Type 或標頭無效，略過處理");
-                            return Content("400");
+                            return new ContentResult { StatusCode = 400 };
                         }
 
                         var data = ConvertAtomToClass(Request.Body, signature.ToString().Split(new char[] { '=' })[1]);
                         if (data == null)
-                            return Content("400");
+                            return new ContentResult { StatusCode = 400 };
 
                         _logger.LogInformation("{Data}", data.ToString());
-                        return Content("200");
+                        return new ContentResult { StatusCode = 200 };
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, $"NotificationCallback-ConvertAtomToClass 錯誤\n");
-                        return Content("500");
+                        return new ContentResult { StatusCode = 500 };
                     }
                 }
                 else if (Request.Method == "GET")
@@ -90,14 +90,14 @@ namespace Discord_Stream_Bot_Backend.Controllers
                                 try
                                 {
                                     if (string.IsNullOrEmpty(channelId))
-                                        return Content("400");
+                                        return new ContentResult { StatusCode = 400 };
 
                                     _redisService.RedisDb.StringSet($"youtube.pubsub.HMACSecret:{channelId}", verifyToken, TimeSpan.FromSeconds(int.Parse(leaseSeconds)));
                                 }
                                 catch (Exception ex)
                                 {
                                     _logger.LogError(ex, "設定 VerifyToken 錯誤");
-                                    return Content("400");
+                                    return new ContentResult { StatusCode = 500 };
                                 }
                             }
                             return Content(challenge);
@@ -110,23 +110,23 @@ namespace Discord_Stream_Bot_Backend.Controllers
                             catch (Exception ex)
                             {
                                 _logger.LogError(ex, "UnSubscribe 錯誤");
-                                return Content("400");
+                                return new ContentResult { StatusCode = 500 };
                             }
                         default:
                             _logger.LogWarning("NotificationCallback 錯誤，未知的 mode: {Mode}", mode);
-                            return Content("400");
+                            return new ContentResult { StatusCode = 400 };
                     }
                 }
                 else
                 {
                     _logger.LogWarning($"NotificationCallback 錯誤，未知的標頭");
-                    return Content("400");
+                    return new ContentResult { StatusCode = 400 };
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "NotificationCallback 錯誤\n");
-                return Content("500");
+                return new ContentResult { StatusCode = 500 };
             }
         }
 

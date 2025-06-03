@@ -4,9 +4,12 @@ using Microsoft.Extensions.Logging;
 using NLog;
 using NLog.Web;
 using System;
-using System.Diagnostics;
 using System.Reflection;
+
+#if DEBUG
+using System.Diagnostics;
 using System.Threading;
+#endif
 
 namespace Discord_Stream_Bot_Backend
 {
