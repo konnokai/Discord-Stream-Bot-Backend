@@ -2,7 +2,7 @@
   "profiles": {
     "Discord Stream Bot Backend": {
       "commandName": "Project",
-      "workingDirectory": ".\\bin\\Debug\\net6.0",
+      "workingDirectory": ".\\bin\\Debug\\net8.0",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
