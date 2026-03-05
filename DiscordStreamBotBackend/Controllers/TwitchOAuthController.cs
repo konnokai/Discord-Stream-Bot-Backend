@@ -49,7 +49,7 @@ namespace DiscordStreamBotBackend.Controllers
         public APIResult GetTwitchOAuthUrl(string state)
         {
             var url = _twitchAPI.Auth.GetAuthorizationCodeUrl(_configuration["RedirectUrl"],
-                new List<AuthScopes>() { AuthScopes.Helix_Moderation_Read, AuthScopes.Helix_User_Read_Subscriptions },
+                new List<AuthScopes>() { AuthScopes.Moderation_Read, AuthScopes.User_Read_Subscriptions },
                 true,
                 state);
 

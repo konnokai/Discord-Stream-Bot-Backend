@@ -9,7 +9,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -49,7 +48,7 @@ namespace DiscordStreamBotBackend.Controllers
                     ClientId = _configuration["Google:ClientId"],
                     ClientSecret = _configuration["Google:ClientSecret"]
                 },
-                Scopes = new string[] { "https://www.googleapis.com/auth/youtube.force-ssl" },
+                Scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"],
                 DataStore = new RedisDataStore(_redisService, _tokenService)
             });
         }
@@ -79,14 +78,14 @@ namespace DiscordStreamBotBackend.Controllers
                 DiscordAccessTokenData tokenData = null;
                 try
                 {
-                    var content = new FormUrlEncodedContent(new KeyValuePair<string, string>[]
-                    {
+                    var content = new FormUrlEncodedContent(
+                    [
                         new("code", code),
                         new("client_id",  _configuration["Discord:ClientId"]),
                         new("client_secret", _configuration["Discord:ClientSecret"]),
                         new("redirect_uri",  _configuration["RedirectUrl"]),
                         new("grant_type", "authorization_code")
-                    });
+                    ]);
                     content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     var response = await _httpClient.PostAsync("https://discord.com/api/v10/oauth2/token", content);
 
