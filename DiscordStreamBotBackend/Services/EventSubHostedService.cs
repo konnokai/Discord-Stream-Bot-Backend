@@ -42,7 +42,7 @@ namespace DiscordStreamBotBackend.Services
 
         private Task OnError(object sender, OnErrorArgs e)
         {
-            _logger.LogError("Twitch 錯誤，原因: {Reason} - 訊息: {Message}", e.Reason, e.Message);
+            _logger.LogError("Twitch 錯誤，原因: {Reason} - 訊息: {Message}\n", e.Reason, e.Message);
             return Task.CompletedTask;
         }
 

@@ -33,7 +33,7 @@ namespace DiscordStreamBotBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Redis Increment Error");
+                _logger.LogError(ex, "Redis Increment Error\n");
             }
 
             try
@@ -69,7 +69,7 @@ namespace DiscordStreamBotBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "RandomVideo");
+                _logger.LogError(ex, "RandomVideo\n");
                 return Redirect("https://dcbot.konnokai.me/stream");
             }
         }

@@ -25,7 +25,7 @@ namespace DiscordStreamBotBackend.Controllers
 
             if (string.IsNullOrEmpty(_configuration["TwitCasting:WebHookSignature"]))
             {
-                _logger.LogError("TwitCasting WebHook Signature is not set in configuration! Please set it in appsettings.json or environment variables.");
+                _logger.LogError("TwitCasting WebHook Signature is not set in configuration! Please set it in appsettings.json or environment variables.\n");
             }
         }
 
@@ -39,13 +39,13 @@ namespace DiscordStreamBotBackend.Controllers
 
                 if (webHookJson == null)
                 {
-                    _logger.LogError("TwitCasting WebHook Is Null!");
+                    _logger.LogError("TwitCasting WebHook Is Null!\n");
                     return new ContentResult { StatusCode = 400 };
                 }
 
                 if (webHookJson.Signature != _configuration["TwitCasting:WebHookSignature"])
                 {
-                    _logger.LogError("Invalid Signature from TwitCasting WebHook!");
+                    _logger.LogError("Invalid Signature from TwitCasting WebHook!\n");
                     return new ContentResult { StatusCode = 401 };
                 }
 
@@ -59,7 +59,7 @@ namespace DiscordStreamBotBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Read TwitCasting WebHook Error");
+                _logger.LogError(ex, "Read TwitCasting WebHook Error\n");
                 return new ContentResult { StatusCode = 500 };
             }
 

@@ -43,7 +43,7 @@ namespace DiscordStreamBotBackend.Services
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, "Redis 連線錯誤，請確認伺服器是否已開啟");
+                _logger.LogError(exception, "Redis 連線錯誤，請確認伺服器是否已開啟\n");
                 throw;
             }
 
@@ -108,7 +108,7 @@ namespace DiscordStreamBotBackend.Services
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "通知訊息發送錯誤 | Channel: \"{channel}\" | Message: \"{message}\"", message.Value.Key, message.Value.Value);
+                            _logger.LogError(ex, "通知訊息發送錯誤 | Channel: \"{channel}\" | Message: \"{message}\"\n", message.Value.Key, message.Value.Value);
                         }
                     }
                 }
@@ -152,8 +152,8 @@ namespace DiscordStreamBotBackend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "現正直播清單重整失敗");
-                NowRecordList = new List<string>();
+                _logger.LogError(ex, "現正直播清單重整失敗\n");
+                NowRecordList = [];
             }
         }
     }

@@ -40,7 +40,7 @@ namespace DiscordStreamBotBackend.Controllers
 
                 if (webHookJson == null)
                 {
-                    _logger.LogError("Read Bililive Recorder Null");
+                    _logger.LogError("Read Bililive Recorder Null\n");
                     return new ContentResult { StatusCode = 500 };
                 }
 
@@ -54,7 +54,7 @@ namespace DiscordStreamBotBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Read Bililive Recorder Data Error");
+                _logger.LogError(ex, "Read Bililive Recorder Data Error\n");
                 return new ContentResult { StatusCode = 500 };
             }
 
@@ -91,7 +91,7 @@ namespace DiscordStreamBotBackend.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Get Bililive Info 失敗");
+                    _logger.LogError(ex, "Get Bililive Info 失敗\n");
                 }
 
                 var discordWebhookClient = new DiscordWebhookClient(_configuration["BililiveWebHookUrl"]);
@@ -99,7 +99,7 @@ namespace DiscordStreamBotBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Discord WebHook 發送失敗");
+                _logger.LogError(ex, "Discord WebHook 發送失敗\n");
             }
         }
     }
