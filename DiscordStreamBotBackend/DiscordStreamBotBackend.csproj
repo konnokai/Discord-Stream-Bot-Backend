@@ -7,15 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net.Webhook" Version="3.17.4" />
+    <PackageReference Include="Discord.Net.Webhook" Version="3.19.0" />
+    <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
     <PackageReference Include="Google.Apis.Oauth2.v2" Version="1.68.0.1869" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.16" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="NLog" Version="5.4.0" />
-    <PackageReference Include="NLog.Web.AspNetCore" Version="5.4.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.8.37" />
-    <PackageReference Include="TwitchLib.Api" Version="3.9.0" />
-    <PackageReference Include="TwitchLib.EventSub.Webhooks" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.24" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="NLog" Version="6.1.1" />
+    <PackageReference Include="NLog.Web.AspNetCore" Version="6.1.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.11.8" />
+    <PackageReference Include="TwitchLib.Api" Version="3.10.2" />
+    <PackageReference Include="TwitchLib.EventSub.Webhooks" Version="3.0.0" />
+	<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,6 +8,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using DiscordStreamBotBackend.DataBase;
+using System.Linq;
 
 namespace DiscordStreamBotBackend.Controllers
 {
@@ -18,11 +20,13 @@ namespace DiscordStreamBotBackend.Controllers
     {
         private readonly ILogger<YouTubeNotificationsController> _logger;
         private readonly RedisService _redisService;
+        private readonly MainDbContext _db;
 
-        public YouTubeNotificationsController(ILogger<YouTubeNotificationsController> logger, RedisService redisService)
+        public YouTubeNotificationsController(ILogger<YouTubeNotificationsController> logger, RedisService redisService, MainDbContext db)
         {
             _logger = logger;
             _redisService = redisService;
+            _db = db;
         }
 
         [HttpGet]
@@ -92,11 +96,17 @@ namespace DiscordStreamBotBackend.Controllers
                                     if (string.IsNullOrEmpty(channelId))
                                         return new ContentResult { StatusCode = 400 };
 
+                                    if (!_db.YoutubeChannelSpider.Any((x) => x.ChannelId == channelId))
+                                        return new ContentResult { StatusCode = 404 };
+
                                     _redisService.RedisDb.StringSet($"youtube.pubsub.HMACSecret:{channelId}", verifyToken, TimeSpan.FromSeconds(int.Parse(leaseSeconds)));
+
+                                    _db.YoutubeChannelSpider.Find(channelId).LastSubscribeTime = DateTime.Now;
+                                    _db.SaveChanges();
                                 }
                                 catch (Exception ex)
                                 {
-                                    _logger.LogError(ex, "設定 VerifyToken 錯誤");
+                                    _logger.LogError(ex, "設定 VerifyToken 錯誤\n");
                                     return new ContentResult { StatusCode = 500 };
                                 }
                             }
@@ -109,7 +119,7 @@ namespace DiscordStreamBotBackend.Controllers
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogError(ex, "UnSubscribe 錯誤");
+                                _logger.LogError(ex, "UnSubscribe 錯誤\n");
                                 return new ContentResult { StatusCode = 500 };
                             }
                         default:

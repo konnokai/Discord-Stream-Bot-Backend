@@ -1,7 +1,9 @@
+using DiscordStreamBotBackend.DataBase;
 using DiscordStreamBotBackend.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -21,6 +23,11 @@ namespace DiscordStreamBotBackend
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<MainDbContext>(options =>
+                options
+                    .UseMySql(Configuration.GetConnectionString("MySql"), ServerVersion.AutoDetect(Configuration.GetConnectionString("MySql")))
+                    .UseSnakeCaseNamingConvention());
+
             services.AddControllers().AddNewtonsoftJson(options =>
             {
                 options.UseMemberCasing();

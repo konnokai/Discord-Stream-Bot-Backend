@@ -34,7 +34,7 @@ namespace DiscordStreamBotBackend.Services
 
             try
             {
-                RedisConnection.Init(_configuration["RedisConnectOption"]);
+                RedisConnection.Init(_configuration.GetConnectionString("Redis"));
                 Redis = RedisConnection.Instance.ConnectionMultiplexer;
                 RedisDb = Redis.GetDatabase(1);
                 RedisSub = Redis.GetSubscriber();

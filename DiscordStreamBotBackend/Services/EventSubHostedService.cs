@@ -3,9 +3,10 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using TwitchLib.EventSub.Core.EventArgs.Channel;
+using TwitchLib.EventSub.Core.EventArgs.Stream;
 using TwitchLib.EventSub.Webhooks.Core;
 using TwitchLib.EventSub.Webhooks.Core.EventArgs;
-using TwitchLib.EventSub.Webhooks.Core.EventArgs.Channel;
 
 namespace DiscordStreamBotBackend.Services
 {
@@ -25,39 +26,44 @@ namespace DiscordStreamBotBackend.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _eventSubWebhooks.OnError += OnError;
-            _eventSubWebhooks.OnStreamOffline += _eventSubWebhooks_OnStreamOffline;
-            _eventSubWebhooks.OnChannelUpdate += _eventSubWebhooks_OnChannelUpdate;
+            _eventSubWebhooks.Error += OnError;
+            _eventSubWebhooks.StreamOffline += _eventSubWebhooks_OnStreamOffline;
+            _eventSubWebhooks.ChannelUpdate += _eventSubWebhooks_OnChannelUpdate;
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _eventSubWebhooks.OnError += OnError;
-            _eventSubWebhooks.OnStreamOffline -= _eventSubWebhooks_OnStreamOffline;
-            _eventSubWebhooks.OnChannelUpdate -= _eventSubWebhooks_OnChannelUpdate;
+            _eventSubWebhooks.Error -= OnError;
+            _eventSubWebhooks.StreamOffline -= _eventSubWebhooks_OnStreamOffline;
+            _eventSubWebhooks.ChannelUpdate -= _eventSubWebhooks_OnChannelUpdate;
             return Task.CompletedTask;
         }
 
-        private void OnError(object sender, OnErrorArgs e)
+        private Task OnError(object sender, OnErrorArgs e)
         {
             _logger.LogError("Twitch 錯誤，原因: {Reason} - 訊息: {Message}", e.Reason, e.Message);
+            return Task.CompletedTask;
         }
 
-        private void _eventSubWebhooks_OnStreamOffline(object sender, TwitchLib.EventSub.Webhooks.Core.EventArgs.Stream.StreamOfflineArgs e)
+        private Task _eventSubWebhooks_OnStreamOffline(object sender, StreamOfflineArgs e)
         {
-            _logger.LogInformation("Twitch 直播已離線: {UserName} ({UserId})", e.Notification.Event.BroadcasterUserName, e.Notification.Event.BroadcasterUserId);
-            _redisService.AddPubMessage("twitch:stream_offline", JsonConvert.SerializeObject(e.Notification.Event));
+            _logger.LogInformation("Twitch 直播已離線: {UserName} ({UserId})", e.Payload.Event.BroadcasterUserName, e.Payload.Event.BroadcasterUserId);
+            _redisService.AddPubMessage("twitch:stream_offline", JsonConvert.SerializeObject(e.Payload.Event));
+
+            return Task.CompletedTask;
         }
 
-        private void _eventSubWebhooks_OnChannelUpdate(object sender, ChannelUpdateArgs e)
+        private Task _eventSubWebhooks_OnChannelUpdate(object sender, ChannelUpdateArgs e)
         {
             _logger.LogInformation("Twitch 頻道狀態更新: {UserName} - {Titlie} ({CategoryName})",
-                e.Notification.Event.BroadcasterUserName,
-                e.Notification.Event.Title,
-                e.Notification.Event.CategoryName);
+                e.Payload.Event.BroadcasterUserName,
+                e.Payload.Event.Title,
+                e.Payload.Event.CategoryName);
 
-            _redisService.AddPubMessage("twitch:channel_update", JsonConvert.SerializeObject(e.Notification.Event));
+            _redisService.AddPubMessage("twitch:channel_update", JsonConvert.SerializeObject(e.Payload.Event));
+
+            return Task.CompletedTask;
         }
     }
 }
